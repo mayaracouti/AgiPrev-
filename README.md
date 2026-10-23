@@ -76,7 +76,7 @@ Para encerrar o app, pressione `Ctrl+C` no terminal do Expo. Para encerrar API e
 docker compose down
 ```
 
-Escolha um dos perfis retornados pela API e entre com a senha fictícia definida em `DEMO_PASSWORD`. Não há senha de usuário real. A sessão Bearer expira e o logout a revoga no servidor. O saldo confirmado é lido da API; os cenários/Pix visuais anteriores ficam explicitamente separados do ledger persistido.
+Escolha um dos perfis fictícios retornados pela API e toque em **Entrar no protótipo**, sem informar senha. `DEMO_PASSWORD` permanece apenas para o seed e clientes antigos; não é necessária na interface. A sessão Bearer expira e o logout a revoga no servidor. O saldo confirmado é lido da API; os cenários/Pix visuais anteriores ficam explicitamente separados do ledger persistido.
 
 A navegação solicitada na TASK-007 é **Início, Extrato, Pix e AgiPrevê**. A Conta permanece acessível pelo Início. O Laboratório não faz parte das abas.
 
@@ -139,7 +139,7 @@ Depois de `docker compose up --build -d`, conferir revisão `0006_alerts_refresh
 docker compose exec api python -m app.demo --seed 4241
 ```
 
-Entrar com `synthetic-4241-2@demo.local` e a `DEMO_PASSWORD` do ambiente. O comando calcula uma despesa demonstrativa para deixar R$50,00, grava a operação e gera previsão/alerta reais do protótipo. Repetir a seed preserva dados; escolher outra seed para uma apresentação nova. Um Pix fictício de R$10,00 permite mostrar antes/depois. O app exibe saldo, previsões persistidas, real × previsto, central e simulação sem débito.
+Selecione `synthetic-4241-2@demo.local` e entre sem senha. O comando calcula uma despesa demonstrativa para deixar R$50,00, grava a operação e gera previsão/alerta reais do protótipo. Repetir a seed preserva dados; escolher outra seed para uma apresentação nova. Um Pix fictício de R$10,00 permite mostrar antes/depois. O app exibe saldo, previsões persistidas, real × previsto, central e simulação sem débito.
 
 [Roteiro de 10 minutos](docs/guides/demo-walkthrough.md), [aceite GO/NO-GO](docs/MVP_ACCEPTANCE_REPORT.md) e [evidências por task](docs/IMPLEMENTATION_STATUS.md). O laboratório técnico oferece relatórios autenticados JSON/CSV/HTML por conta em `/api/v1/accounts/{id}/evaluation/reports`, com filtros; não é uma aba bancária. No OpenAPI, criar/recuperar experimentos em `/accounts/{id}/experiments`. Não colocar tokens em URLs ou documentação.
 

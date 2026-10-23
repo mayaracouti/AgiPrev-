@@ -150,3 +150,16 @@ def test_database_rejects_negative_amounts_and_duplicate_references(pg_client):
                 )
             )
             session.flush()
+
+
+def test_passwordless_demo_login_and_unknown_profile(pg_client):
+    client, _ = pg_client
+    response = client.post("/api/v1/auth/login", json={"email": "gisele@demo.local"})
+    assert response.status_code == 200
+    auth = response.json()
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
+    assert client.get(f"/api/v1/accounts/{auth['accounts'][0]['id']}/balance", headers=headers).status_code == 200
+    assert client.post("/api/v1/auth/logout", headers=headers).status_code == 204
+    assert client.get("/api/v1/auth/me", headers=headers).status_code == 401
+    assert client.post("/api/v1/auth/login", json={"email": "missing@demo.local"}).status_code == 401

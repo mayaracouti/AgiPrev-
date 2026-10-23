@@ -6,7 +6,7 @@ Prefixo de negócio: `/api/v1`. A API também mantém `/health`, `/health/live`,
 | --- | --- | --- |
 | GET /api/v1/health | Público | 200 `{"status":"ok"}` se o banco responde; 503 se indisponível |
 | GET /api/v1/customers | Público, somente perfis fictícios | Lista de id, nome, e-mail fictício e perfil, sem senha/conta/saldo |
-| POST /api/v1/auth/login | E-mail e senha de desenvolvimento no JSON | Token Bearer, expiração, cliente e suas contas; 401 para credenciais inválidas |
+| POST /api/v1/auth/login | E-mail fictício no JSON; senha opcional para clientes antigos | Token Bearer, expiração, cliente e suas contas; 401 para credenciais inválidas |
 | GET /api/v1/auth/me | Bearer | Cliente da sessão |
 | POST /api/v1/auth/logout | Bearer | 204 e revogação persistida |
 | GET /api/v1/accounts | Bearer | Somente as contas do cliente da sessão |
@@ -27,6 +27,8 @@ Erros usam `{"error":{"code":"...","message":"...","details":[]},"request_id":".
 O cliente Axios usa timeout de 10 segundos, cancelamento e tratamento separado de rede, timeout, validação e servidor. Nenhuma falha se transforma em saldo zero ou fixture de sucesso. Hooks vinculam respostas à conta/versão da consulta e descartam requisições canceladas.
 
 ## Sessão e limitações
+
+O protótipo permite selecionar um perfil fictício e enviar `{"email":"gisele@demo.local"}` ao login sem senha. A API continua emitindo sessão Bearer, validando propriedade, expiração e logout. Qualquer perfil público fictício pode ser acessado; isso não comprova identidade. Se um cliente antigo enviar senha, ela ainda será validada.
 
 Senha: PBKDF2-SHA256 com salt exclusivo e 600.000 iterações. Token: 32 bytes aleatórios em base64url, somente hash SHA-256 persistido. Expiração e revogação são verificadas em cada consulta protegida. O app mantém o token apenas na memória e o descarta ao expirar; não há refresh token nem persistência de login nesta etapa.
 

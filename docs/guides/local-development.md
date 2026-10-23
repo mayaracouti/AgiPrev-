@@ -106,7 +106,7 @@ docker compose down
 
 ## Roteiro de demonstração do frontend
 
-1. Selecione Gisele, Rafael ou Ana retornados pela API e entre com DEMO_PASSWORD de desenvolvimento, sem usar credenciais reais.
+1. Selecione Gisele, Rafael ou Ana retornados pela API e entre sem senha.
 2. Confira o saldo, oculte os valores e abra o extrato. Filtre por período e categoria ou busque pela descrição.
 3. No cenário visual separado, registre uma receita, despesa ou Pix fictício. Tente valor inválido e uma saída acima do saldo. Confirme um valor válido uma única vez.
 4. Veja o saldo do cenário atualizado (o ledger e saldo confirmado no servidor não são alterados) e a comparação de cenário antes/depois na confirmação. Abra o AgiPrevê e consulte 7, 15 e 30 dias.
@@ -156,7 +156,7 @@ Para gerar o conjunto completo (operação administrativa local e exclusivamente
 docker compose exec api python -m app.modules.simulation.generator --seed 42 --count 1000
 ```
 
-Gera seis perfis e 158 mil transações realizadas nos 365 dias anteriores a 23/10/2026, mais 36 mil eventos pendentes para um ano. O seletor público permite escolher perfil e navegar por páginas; os clientes gerados usam a DEMO_PASSWORD fictícia configurada. Cada senha recebe salt próprio; essa etapa pode levar alguns minutos para 1000 clientes. Não usar senhas pessoais.
+Gera seis perfis e 158 mil transações realizadas nos 365 dias anteriores a 23/10/2026, mais 36 mil eventos pendentes para um ano. O seletor público permite escolher perfil e navegar por páginas; os clientes gerados permitem entrada sem senha pelo seletor do app; hashes legados usam a DEMO_PASSWORD fictícia configurada. Cada senha recebe salt próprio; essa etapa pode levar alguns minutos para 1000 clientes. Não usar senhas pessoais.
 
 A mesma seed/índice reproduz IDs e dados financeiros (`synthetic-v1`); timestamps operacionais e hashes/salts de autenticação não compõem a comparação. Reexecutar a mesma seed pula clientes existentes sem substituir suas movimentações. Para comparar conjuntos novos, use seeds distintas ou bancos descartáveis; não limpe o banco de desenvolvimento.
 
