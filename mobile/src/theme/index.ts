@@ -1,0 +1,67 @@
+import { StyleSheet } from "react-native";
+export const theme = {
+  colors: {
+    primary: "#1F4DD8",
+    darkBlue: "#173BB8",
+    background: "#F6F8FC",
+    text: "#18233D",
+    muted: "#66758E",
+    border: "#E7ECF4",
+    green: "#16745A",
+    red: "#B63E47",
+    paleBlue: "#EEF3FF",
+    paleGreen: "#E8F7F0",
+    amber: "#8A5B10",
+    noticeBackground: "#FFF8E8",
+  },
+} as const;
+export const ui = StyleSheet.create({
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#EDF0F6",
+    gap: 12,
+  },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  between: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  title: {
+    color: theme.colors.text,
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: -0.6,
+  },
+  heading: { color: theme.colors.text, fontSize: 18, fontWeight: "800" },
+  body: { color: theme.colors.muted, fontSize: 14, lineHeight: 21 },
+  label: { color: theme.colors.text, fontSize: 14, fontWeight: "700" },
+  kicker: {
+    color: "#637BB2",
+    fontSize: 11,
+    letterSpacing: 1.3,
+    fontWeight: "800",
+  },
+  amount: {
+    color: theme.colors.text,
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: -0.6,
+  },
+  input: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderColor: "#D6DFED",
+    borderRadius: 12,
+    backgroundColor: "#FBFCFE",
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: theme.colors.text,
+  },
+  grid: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
+  divider: { height: 1, backgroundColor: theme.colors.border },
+});

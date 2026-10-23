@@ -1,0 +1,25 @@
+name: agipreve-test
+services:
+  db-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: agipreve_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: disposable-test-password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d agipreve_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  tests:
+    build: ./backend
+    environment:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg://test:disposable-test-password@db-test:5432/agipreve_test
+      TEST_DATABASE_URL: postgresql+psycopg://test:disposable-test-password@db-test:5432/agipreve_test
+    depends_on:
+      db-test:
+        condition: service_healthy
+    command: ["pytest", "-p", "no:cacheprovider", "-v"]
