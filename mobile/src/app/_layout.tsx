@@ -1,10 +1,16 @@
-import { AuthProvider } from "@/auth/AuthProvider";
-import { Stack } from "expo-router";
+import { useEffect } from "react";
+import { observeNotificationOpening } from "@/features/notifications";
+import { AuthProvider, useAuth } from "@/auth/AuthProvider";
+import { Stack, router } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "react-native";
 import { DemoProvider, useDemo } from "@/demo/DemoProvider";
 function Navigation() {
   const { signedIn } = useDemo();
+  const account = useAuth().session?.accounts[0]?.id;
+  useEffect(() => observeNotificationOpening((id, owner) => {
+    if (signedIn && owner === account) router.push({pathname: "/alerts", params: {alertId: id}});
+  }), [account, signedIn]);
   return (
     <>
       <StatusBar barStyle="dark-content" />

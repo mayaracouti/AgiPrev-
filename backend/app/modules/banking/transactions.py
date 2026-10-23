@@ -61,6 +61,10 @@ class Receipt(BaseModel):
     transaction: TransactionResponse
     balance: str
     simulated: Literal[True] = True
+    forecast_id: UUID | None = None
+    previous_forecast_id: UUID | None = None
+    forecast_status: Literal["ready", "failed", "pending"] = "pending"
+    correlation_id: str | None = None
 
 
 class CategoryUpdate(BaseModel):
@@ -88,6 +92,8 @@ def fingerprint(value: dict) -> str:
 
 
 def post_transaction(session, customer_id, account_id, body: TransactionInput, kind: str):
+    from app.modules.forecasting.recovery import queue_refresh, recover_refresh
+    from app.modules.notifications.models import ForecastRefresh
     from app.modules.simulation.services import get_scenario
 
     owned_locked(session, account_id, customer_id)
@@ -98,6 +104,9 @@ def post_transaction(session, customer_id, account_id, body: TransactionInput, k
         if existing.request_hash != digest:
             raise AppError(409, "IDEMPOTENCY_CONFLICT", "Chave já usada para outra movimentação.")
         result = existing
+        refresh = session.scalar(
+            select(ForecastRefresh).where(ForecastRefresh.transaction_id == result.id)
+        )
     else:
         direction = "credit" if kind == "income" else "debit"
         category = body.category_id or (
@@ -130,11 +139,19 @@ def post_transaction(session, customer_id, account_id, body: TransactionInput, k
         )
         session.add(result)
         session.flush()
+        refresh = queue_refresh(session, result)
     receipt = Receipt(
         transaction=TransactionResponse.model_validate(result),
         balance=format(BankingRepository(session).balance(account_id), ".2f"),
     )
-    session.commit()
+    refresh_id = refresh.id if refresh is not None else None
+    session.commit()  # Monetary operation is durable even when the model fails.
+    if refresh_id is not None:
+        refresh = recover_refresh(session, refresh_id)
+        receipt.forecast_id = refresh.forecast_id
+        receipt.previous_forecast_id = refresh.previous_forecast_id
+        receipt.forecast_status = refresh.status
+        receipt.correlation_id = refresh.correlation_id
     return receipt
 
 

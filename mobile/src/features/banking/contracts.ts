@@ -59,7 +59,7 @@ export interface BankTransaction extends LedgerEntry {
   recipient: string | null;
 }
 export interface TransactionPage { items: BankTransaction[]; next_cursor: string | null; total: number }
-export interface Receipt { transaction: BankTransaction; balance: string; simulated: true }
+export interface Receipt { forecast_id?: string | null; previous_forecast_id?: string | null; forecast_status?: "ready" | "failed"; correlation_id?: string; transaction: BankTransaction; balance: string; simulated: true }
 export interface Scenario {
   id: string; current_date: string; seed: number; version: string; balance: string;
   pending_events: {id: string; date: string; kind: string; amount: string; direction: string; description: string; scheduled_balance: string}[];

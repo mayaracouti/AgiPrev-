@@ -25,12 +25,18 @@ def test_forecast_api_versions_auth_validation_money_and_immutability(pg_client)
         assert run["model_version"] and run["dataset_version"]
         assert run["points"][0]["balance"] == "2947.53"
         snapshots.append(run)
-    client.post(base + "/credits", json=payload("1.01"), headers=headers).raise_for_status()
+    credit = client.post(base + "/credits", json=payload("1.01"), headers=headers)
+    credit.raise_for_status()
+    assert credit.json()["forecast_status"] == "ready"
+    automatic_id = credit.json()["forecast_id"]
     new = client.post(base + "/forecasts", json={}, headers=headers).json()
     assert new["points"][0]["balance"] == "2948.54"
     old = client.get(base + "/forecasts/" + snapshots[0]["id"], headers=headers)
     assert old.json() == snapshots[0]
-    assert len(client.get(base + "/forecasts", headers=headers).json()) == 4
+    versions = client.get(base + "/forecasts", headers=headers).json()
+    assert len(versions) == 5  # Three originals, one automatic after credit, one manual.
+    assert automatic_id in {run["id"] for run in versions}
+    assert automatic_id != new["id"]
     other, other_headers = auth_context(client, "rafael@demo.local")
     assert client.get(base + "/forecasts", headers=other_headers).status_code == 404
     assert (
@@ -93,7 +99,7 @@ def test_persisted_series_late_availability_reversals_and_trained_forecast(pg_cl
     assert response.json()["series"][-1]["income"] == "0.00"
     forecast = client.post(base + "/forecasts", json={"horizon": 30}, headers=headers)
     assert forecast.status_code == 200, forecast.text
-    assert forecast.json()["model_version"].startswith("boosted-stumps-v1:")
+    assert forecast.json()["model_version"].startswith("boosted-stumps-v2:")
     assert all(Decimal(p["variable_expense"]) >= 0 for p in forecast.json()["points"])
 
 

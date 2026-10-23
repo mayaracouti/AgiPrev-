@@ -1,3 +1,4 @@
+import { AlertCenter } from "@/features/forecasting/AlertCenter";
 import { Text } from "react-native";
 import { useDemo } from "@/demo/DemoProvider";
 import { dateLabel, money, realizedBalance } from "@/demo/model";
@@ -11,6 +12,7 @@ export default function Alerts() {
       title="Seus alertas"
       subtitle="Contexto para agir com antecedência."
     >
+      <AlertCenter />
       <Card>
         <Text style={ui.body}>
           Alertas internos do cenário ilustrativo. Não há envio de push nesta

@@ -48,6 +48,8 @@ class Run(BaseModel):
     model_version: str
     dataset_version: str
     seed: int
+    experiment_id: UUID | None = None
+    experiment_version: str | None = None
     points: list[Point]
     risk: Risk | None
     estimate_notice: str
@@ -104,10 +106,14 @@ def create_forecast(
 ):
     owned_locked(session, account_id, customer.id)
     cutoff = get_scenario(session, account_id).current_date
+    response = persist_forecast(session, account_id, cutoff, body.horizon, body.method)
+    session.commit()
+    return response
+
+
+def persist_forecast(session, account_id, cutoff, horizon, method):
     try:
-        result = project(
-            observations(session, account_id, cutoff), cutoff, body.horizon, body.method
-        )
+        result = project(observations(session, account_id, cutoff), cutoff, horizon, method)
     except ValueError as exc:
         raise AppError(
             422, "INVALID_FORECAST_HISTORY", "Histórico inconsistente para previsão."
@@ -119,8 +125,8 @@ def create_forecast(
         created_at=response.created_at,
         account_id=account_id,
         base_date=cutoff,
-        horizon=body.horizon,
-        method=body.method,
+        horizon=horizon,
+        method=method,
         model_version=result["model_version"],
         dataset_version=result["dataset_version"],
         seed=42,
@@ -136,7 +142,9 @@ def create_forecast(
             for p in response.points
         ]
     )
-    session.commit()
+    from app.modules.notifications.services import emit_alert
+
+    emit_alert(session, account_id, run)
     return response
 
 
@@ -151,6 +159,64 @@ def list_forecasts(account_id: UUID, session: Database, customer: CurrentCustome
             .order_by(ForecastRun.created_at.desc())
             .limit(100)
         )
+    ]
+
+
+@router.get("/forecasts/latest")
+def latest(
+    account_id: UUID,
+    session: Database,
+    customer: CurrentCustomer,
+    horizon: Literal[7, 15, 30] | None = None,
+):
+    from app.modules.forecasting.analytics import dashboard
+
+    owned_locked(session, account_id, customer.id)
+    result = dashboard(session, account_id, horizon)
+    session.commit()
+    return result
+
+
+class SimulationInput(BaseModel):
+    amount: str = Field(pattern=r"^(?:0|[1-9]\d{0,15})\.\d{2}$")
+    horizon: Literal[7, 15, 30] = 30
+
+
+@router.post("/forecasts/simulate")
+def simulate(account_id: UUID, body: SimulationInput, session: Database, customer: CurrentCustomer):
+    from app.modules.forecasting.analytics import simulate_expense
+
+    owned_locked(session, account_id, customer.id)
+    return simulate_expense(session, account_id, body.amount, body.horizon)
+
+
+@router.get("/forecasts/{run_id}/series")
+def series(account_id: UUID, run_id: UUID, session: Database, customer: CurrentCustomer):
+    from app.modules.forecasting.analytics import comparison
+
+    owned_locked(session, account_id, customer.id)
+    return comparison(session, account_id, run_id)
+
+
+@router.post("/forecast-refreshes/retry")
+def retry_forecast(account_id: UUID, session: Database, customer: CurrentCustomer):
+    from app.modules.forecasting.recovery import recover_refresh
+    from app.modules.notifications.models import ForecastRefresh
+
+    owned_locked(session, account_id, customer.id)
+    pending = list(
+        session.scalars(
+            select(ForecastRefresh)
+            .where(ForecastRefresh.account_id == account_id, ForecastRefresh.status != "ready")
+            .order_by(ForecastRefresh.created_at)
+            .limit(20)
+        )
+    )
+    ids = [record.id for record in pending]
+    session.commit()
+    return [
+        {"id": str(record.id), "status": record.status, "correlation_id": record.correlation_id}
+        for record in (recover_refresh(session, value) for value in ids)
     ]
 
 

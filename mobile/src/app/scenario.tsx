@@ -1,3 +1,4 @@
+import { ApiSimulator } from "@/features/forecasting/ApiSimulator";
 import { useState } from "react";
 import { Text, TextInput } from "react-native";
 import { useDemo } from "@/demo/DemoProvider";
@@ -27,6 +28,8 @@ export default function Scenario() {
       title="E se eu gastar…"
       subtitle="Explore possibilidades sem alterar sua conta ou as previsões salvas."
     >
+      <ApiSimulator />
+      <Text style={ui.heading}>Cenário visual local separado</Text>
       <Badge text="Simulação hipotética · nenhum débito" />
       <Text style={ui.label}>Valor do gasto em reais, hoje</Text>
       <TextInput

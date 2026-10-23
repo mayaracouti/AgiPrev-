@@ -15,7 +15,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=LoginResponse)
 def login(body: LoginRequest, session: Database, response: Response):
-    customer, token, auth = authenticate(session, body.email, body.password.get_secret_value())
+    customer, token, auth = authenticate(session, body.email, body.password.get_secret_value() if body.password else None)
     response.headers["Cache-Control"] = "no-store"
     return LoginResponse(
         access_token=token,

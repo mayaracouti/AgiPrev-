@@ -186,3 +186,11 @@ python -m app.modules.forecasting.laboratory --account UUID --cutoff 2026-07-01 
 O primeiro comando cria manifesto e arquivos separados de treino, validação e holdout em diretório identificado pelo SHA-256. O segundo gera uma interface HTML de comparação dos três baselines e JSON com curvas e MAE de saldo calculado sobre valores realizados. Não usar o holdout para escolher o modelo; a comparação rejeita horizontes além do limite de validação. A geração do relatório não adiciona uma aba ao banco.
 
 Na exportação com fontes do ledger, cada partição contém `series` e `observations` com disponibilidade preservada até seu limite. Imports tardios ficam fora do treino anterior à sua chegada; a versão também incorpora as fontes. Ao construir atributos a partir dessas observações, usar sempre o corte por origem do pipeline, nunca tratar todos os dados da partição como disponíveis em todas as suas datas.
+
+## Entrega integrada e homologação — TASK-041 a 058
+
+O estado mais recente substitui as descrições históricas de previsão/alerta apenas local: backend em `0006_alerts_refresh` serve previsão, comparação, simulador, experimentos/relatórios e central persistida. A UI distingue esses fluxos dos cenários locais anteriores. Veja [contratos](../architecture/api-contracts.md) e [relatório integral](../MVP_ACCEPTANCE_REPORT.md).
+
+Roteiro com seed dedicada, Pix, previsão anterior, alerta e métricas: [demo-walkthrough.md](demo-walkthrough.md). Preparar com `docker compose exec api python -m app.demo --seed 4241`; essa conta de demonstração já foi usada no ensaio de aceite. Repetir a seed preserva seu saldo/relógio, não faz reset. Use outra seed para começar uma nova sessão do zero.
+
+A suíte final e a exportação web passaram, mas homologação integral é NO-GO pelos bloqueios nativos, de desempenho operacional e de cobertura classificatória descritos no relatório. O laboratório técnico é autenticado e separado da navegação bancária; métricas indefinidas não são substituídas por números ilustrativos.

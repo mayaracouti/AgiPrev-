@@ -31,3 +31,10 @@ Refinamento PO das tarefas autorizadas em 23/10/2026. Depende do ledger, relógi
 - Testes automatizados validam lógica e integração PostgreSQL; aceite visual em dispositivo continua separado e deve constar como não verificado se não executado.
 
 Evidências e status por task em [IMPLEMENTATION_STATUS](../IMPLEMENTATION_STATUS.md).
+
+## Complemento PO — revisão das TASK-026 a 030
+
+- Um lançamento mensal já realizado, inclusive antecipado, ocupa a competência (descrição normalizada, direção, ano/mês); o próximo evento deve ocorrer no mês seguinte. O histórico disponível, sem estornos, determina essa ocupação. Reverter integralmente o lançamento permite reconsiderar a competência se ainda houver evidência mínima do padrão.
+- No treino variável, descartar origens anteriores ao reconhecimento das contas fixas identificadas no corte de treino. Isso impede ensinar essas contas como despesas variáveis e somá-las novamente à projeção fixa. Os atributos e rótulos das origens restantes continuam causais. Sem amostras restantes, manter fallback explícito de histórico insuficiente.
+- A prova de cliente não visto deve treinar em um histórico fictício e reutilizar o mesmo modelo, sem chamar `fit`, em outro cliente com referências distintas. Recusar modelo treinado além da data de corte da inferência. O reuso é uma capacidade interna do motor; a API mantém o treino por execução já existente.
+- Consultar versões anteriores ao abrir a tela sem criar execução adicional. Falha de consulta deve mostrar erro e permitir nova tentativa; não usar cenário local como substituto.

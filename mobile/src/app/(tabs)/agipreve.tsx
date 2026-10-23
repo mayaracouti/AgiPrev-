@@ -1,3 +1,4 @@
+import { FinancialDashboard } from "@/features/forecasting/FinancialDashboard";
 import { PersistedForecast } from "@/features/forecasting/PersistedForecast";
 import { RecurrencesCard } from "@/features/banking/components/RecurrencesCard";
 import { useState } from "react";
@@ -34,6 +35,7 @@ export default function Forecast() {
       title="AgiPrevê"
       subtitle="Uma visão clara para você decidir melhor."
     >
+      <FinancialDashboard />
       <PersistedForecast />
       <RecurrencesCard />
       <Card>

@@ -5,7 +5,9 @@ from app.core.config import get_settings
 from app.db.base import Base
 from app.modules.auth.models import AuthSession  # noqa: F401
 from app.modules.banking.models import Account, Customer, LedgerEntry  # noqa: F401
+from app.modules.evaluation.models import Experiment  # noqa: F401
 from app.modules.forecasting.models import ForecastPoint, ForecastRun  # noqa: F401
+from app.modules.notifications.models import Alert, AlertRule, ForecastRefresh  # noqa: F401
 from app.modules.simulation.models import Scenario, ScenarioAction, ScheduledEvent  # noqa: F401
 
 # Import future mapped models here before generating migrations.

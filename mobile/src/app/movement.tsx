@@ -1,3 +1,4 @@
+import { PixForecastImpact } from "@/features/forecasting/PixForecastImpact";
 import { useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Text, TextInput } from "react-native";
@@ -58,7 +59,8 @@ export default function Movement() {
         <Text style={ui.body}>Data: {receipt.transaction.occurred_on}</Text>
         <Text selectable style={ui.body}>Identificador: {receipt.transaction.id}</Text>
         <Text style={ui.body}>Saldo após consulta: {formatDecimal(receipt.balance)}</Text>
-      </Card><Button title="Ver extrato" onPress={() => router.replace("/(tabs)/statement")} />
+        {receipt.forecast_status && <Text style={ui.body}>{receipt.forecast_status === "ready" ? `Nova previsão: ${receipt.forecast_id}. Previsão anterior preservada: ${receipt.previous_forecast_id ?? "nenhuma"}.` : `Movimentação confirmada. Falha na atualização da previsão; tente gerar novamente no AgiPrevê. Referência: ${receipt.correlation_id ?? receipt.transaction.id}.`}</Text>}
+      </Card>{account && receipt.previous_forecast_id && receipt.forecast_id && <PixForecastImpact account={account} before={receipt.previous_forecast_id} after={receipt.forecast_id} />}<Button secondary title="Ver previsão e alertas" onPress={() => router.replace("/(tabs)/agipreve")} /><Button title="Ver extrato" onPress={() => router.replace("/(tabs)/statement")} />
       <Button secondary title="Voltar ao início" onPress={() => router.replace("/(tabs)")} />
     </> : stage === "review" ? <>
       <Card><Text style={ui.heading}>Confira antes de confirmar</Text>

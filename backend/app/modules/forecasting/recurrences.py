@@ -36,7 +36,8 @@ def detect_recurrences(transactions, asof: date):
         month = asof.month
         year = asof.year
         next_date = date(year, month, min(day, calendar.monthrange(year, month)[1]))
-        if next_date <= asof:
+        already_posted = any(d.year == year and d.month == month for d in dates)
+        if next_date <= asof or already_posted:
             year, month0 = divmod(year * 12 + month, 12)
             next_date = date(year, month0 + 1, min(day, calendar.monthrange(year, month0 + 1)[1]))
         result.append(
@@ -49,7 +50,7 @@ def detect_recurrences(transactions, asof: date):
                 "occurrences": len(rows),
                 "confidence": round(score, 4),
                 "confidence_kind": "observed_regularity",
-                "method": "monthly-heuristic-v1",
+                "method": "monthly-heuristic-v2",
             }
         )
     return result

@@ -282,3 +282,135 @@ docs/
 - Em novos imports históricos tardios, preencher `available_on` no relógio simulado; ausência do campo mantém semântica histórica de disponibilidade na data econômica. Estornos parciais/encadeados não são suportados.
 - Treino do MVP é determinístico por execução, sem dependências ML extras; persistem versões e previsões, não um registro externo de artefatos/model serving. Carga e p95 não medidos nesta entrega.
 - Próxima frente desbloqueada: integração de reprevisão após movimentação e avaliação temporal/real × previsto nas tarefas subsequentes. Não iniciadas nesta execução.
+
+## Revisão e complementação TASK-026 a TASK-030 — 23/10/2026
+
+**Status: APROVADA nos critérios automatizados solicitados.** Personas PO → DEV → QA relidas e aplicadas sequencialmente, sem subagentes. Esta execução complementa a implementação anterior; não substitui suas evidências por testes não executados nesta rodada.
+
+### PO — requisitos e regras
+
+Entrada: ledger exclusivamente fictício disponível na data-base; saída: calendário de receitas/contas, despesas variáveis não negativas, saldo diário e versões consultáveis. Dependências existentes: pipeline causal, API autenticada, relógio, PostgreSQL e migração 0004. Regras adicionais registradas em [sprints-03-04.md](requirements/sprints-03-04.md): competência mensal já realizada não se projeta novamente; contas fixas não podem alimentar a componente variável; reuso do modelo não pode treinar no cliente de inferência nem usar treino posterior ao corte; versões podem ser abertas sem gerar uma nova previsão.
+
+### DEV/QA — defeitos encontrados e correções verificadas
+
+- **026/027:** recorrência antecipada podia ser reprojetada no mesmo mês. A detecção passa para o mês seguinte se já houver ocorrência na competência. Fixtures de crédito/salário e débito/aluguel verificam ausência de repetição, próxima data/valor e incerteza explicitamente não calibrada.
+- **027:** teste novo com apenas três aluguéis mensais falhou: a componente variável incluía valores aprendidos antes da identificação da conta fixa. Correção: treino descarta origens anteriores ao reconhecimento dos grupos fixos presentes no corte. Reexecução confirmou fixa total de **300.00** e variável **zero** nos 15 dias.
+- **028:** extraído `train_expense_model` e adicionado reuso opcional no motor. Teste treina no cliente sintético 0 e infere no cliente 1, com referências disjuntas; `fit` é bloqueado somente no teste durante a inferência. Verifica mesmo modelo/árvores, previsões não negativas e rejeição de treino além do corte. A API mantém treino por execução; não foi introduzido cadastro público de modelos ou outro serviço.
+- **029:** regressão da identidade de saldo Decimal passou nos horizontes **7/15/30**, preservando data-base, fluxos e horizonte.
+- **030:** mobile consulta versões ao montar o componente, permite abrir uma versão sem POST, exibe falhas com retry e elimina IDs repetidos na mesclagem da consulta com uma geração. PostgreSQL revalidou snapshot antigo idêntico após crédito, isolamento de contas e rejeição de UPDATE/DELETE de runs/pontos.
+- O TypeScript apontou estado de histórico possivelmente nulo; guarda explícita corrigida antes da validação final. Jest revelou aviso de chave duplicada; deduplicação corrigida e reexecução final sem esse aviso.
+- Versões das implementações atualizadas para **monthly-heuristic-v2** e **boosted-stumps-v2**, distinguindo as novas regras; snapshots anteriores permanecem consultáveis e imutáveis.
+
+### Comandos executados e resultados
+
+- Via `docker compose -f compose.test.yaml run --rm -v /home/mayara/Projetos/agiPreve/backend:/app tests`: `pytest -p no:cacheprovider tests/test_forecasting.py tests/test_forecasting_integration.py tests/test_recurrences.py -q` — **27 passaram em 5.41s**, nenhum skip, PostgreSQL descartável real. Inclui positivos, negativos, bordas e regressões afetadas. Warning de depreciação Starlette/httpx, sem falha.
+- `ruff check --no-cache` e `ruff format --no-cache --check` em engine, recurrences e dois arquivos de testes de previsão — **passaram; quatro arquivos corretamente formatados**.
+- Em `mobile/`: `npm run typecheck && npm run lint && npm run test:components -- --runTestsByPath __tests__/PersistedForecast.test.tsx` — **TypeScript/lint passaram e quatro testes passaram**: calendário de receita, falha sem previsão inventada, conta fixa/abertura de versão salva sem geração e retry da consulta.
+- `git diff --check` — passou. Inventário Markdown e caminhos inspecionados: nenhum Markdown ou diretório novo; documentação existente atualizada, personas mantidas no local obrigatório.
+- Docker inicialmente negado no sandbox: repetido com aprovação. Uma chamada npm na raiz falhou por ausência de package.json; reexecutada corretamente em `mobile/`. Não foi necessário executar regressão completa de áreas não alteradas.
+
+### Arquivos, endpoints e migrações
+
+```text
+backend/app/modules/forecasting/{engine.py,recurrences.py}
+backend/tests/{test_forecasting.py,test_forecasting_integration.py}
+mobile/src/features/forecasting/PersistedForecast.tsx
+mobile/__tests__/PersistedForecast.test.tsx
+docs/requirements/sprints-03-04.md
+docs/IMPLEMENTATION_STATUS.md
+```
+
+**Sem novos endpoints ou migrações nesta revisão.** Preservados POST/GET `/api/v1/accounts/{id}/forecasts` e GET `/api/v1/accounts/{id}/forecasts/{run_id}`. A migração existente `0004_forecasts` foi aplicada automaticamente em schemas descartáveis pelos testes; nenhum banco de desenvolvimento foi migrado nesta rodada. Nenhuma dependência adicionada.
+
+### Pendências e próxima tarefa
+
+Todos os critérios funcionais solicitados têm evidência automatizada executada. **Não verificado:** visual Android/iOS, por ausência de execução em dispositivo/emulador nesta rodada. Não se declara acurácia superior a baselines ou incerteza calibrada; esses critérios estatísticos continuam fora desta entrega. Modelo reutilizável permanece em memória no motor; registro durável de artefatos de treino não foi solicitado nesta revisão. A próxima frente desbloqueada é reprevisão após movimentação/avaliação temporal, sem implementação nesta rodada.
+
+## TASK-041 a 058 e prompts59/60 — integração e aceite final (23/10/2026)
+
+**Decisão integral: NO-GO.** Implementação entregue com testes automatizados aprovados; homologação não declarada devido a notificações/navegação/acessibilidade nativas não verificadas, P95 operacional não medido e holdout sem déficits para validar classificação. Critérios, rastreabilidade individual das58 tasks, números reais, defeitos e decisão em [MVP_ACCEPTANCE_REPORT.md](MVP_ACCEPTANCE_REPORT.md).
+
+Personas PO → DEV → QA lidas; uso de agentes delegado autorizado explicitamente pelo usuário. PO refinou entradas, regras e CT/CA em [sprints-05-07.md](requirements/sprints-05-07.md); DEV integrou frentes e QA executou testes positivos, negativos, bordas e regressão. CT/CA originais e descrições031–040 não encontrados; o mapeamento adotado está identificado como tal, sem aprovar tarefas ausentes por inferência.
+
+### Status por tarefa desta execução
+
+| Task | Status | Evidência / pendência |
+| --- | --- | --- |
+| 041 | APROVADA automatizada | CT-001..018 executáveis e passados; telas de risco/sem risco testadas. |
+| 042 | APROVADA automatizada | Experimentos imutáveis com UUID/version, seed, dataset, hiperparâmetros, modelo e métricas; HTML exibe identificadores. |
+| 043 | APROVADA automatizada | JSON/CSV/HTML autorizados, controles de filtro/gráficos; avaliação offline de seis perfis. |
+| 044 | APROVADA automatizada | GET latest e dashboard saldo/receitas/futuro/risco/data/horizonte, stale e retry. |
+| 045 | APROVADA automatizada | Série por versão; futuro nunca observado; linha zero e distinção nos gráficos. |
+| 046 | APROVADA automatizada | Acumulado/diferença/percentual; basezero=null; desvio sem déficit não gera alerta. |
+| 047 | APROVADA automatizada | Regras configuráveis, severidade, dedup conta/data e justificativa. |
+| 048 | BLOQUEADA no aceite físico | Adaptador Expo real e dois testes de permissão/agendamento/abertura passaram; entrega local em dispositivo não verificada. Push remoto não habilitado. |
+| 049 | APROVADA automatizada | Persistência, detalhe/read, idempotência e isolamento de contas testados PostgreSQL/mobile. |
+| 050 | APROVADA automatizada | Recomendações determinísticas por data/montante, sem crédito ou garantia. |
+| 051 | APROVADA automatizada | Formulário/curvas e endpoint hipotético; saldo/ledger/forecast inalterados. |
+| 052 | APROVADA na API/componentes | Pix HTTP real e PostgreSQL, antes/depois e recuperação; apresentação E2E nativa não verificada. |
+| 053 | APROVADA automatizada | Suíte completa87 backend/47 Jest + regressões Node e migrações reais. |
+| 054 | BLOQUEADA no aceite integral | CPU1000 P95 medido, mas HTTP/DB/E2E concorrente e renderização/refresh em dispositivo não medidos. |
+| 055 | APROVADA automatizada | Falha ML injetada preserva ledger, evento durável failed, correlação/logs e retry ready. |
+| 056 | BLOQUEADA para classificação final | 144 comparações reais, regressão calculada, seleção congelada e holdout idempotente; métricas classificatórias indefinidas sem eventos positivos. |
+| 057 | APROVADA na inicialização automatizada | Compose limpo, migrações/seed/health/persistência e exportação Expo executados; README/roteiro atualizados. |
+| 058 | BLOQUEADA | CA08/09/10 impedem homologação; nenhum teste ausente declarado aprovado. |
+| Prompt59 | NO-GO documentado | Relatório integral e artefatos permanentes entregues, com rastreabilidade58 tasks. |
+| Prompt60 | Preparação/API aprovadas; sessão física não verificada | Roteiro10min, seed4241 e preparação idempotente testada; ensaio HTTP real com Pix/alerta/avanço/relatórios. |
+
+### Resultados executados
+
+- Backend final: `docker compose -f compose.test.yaml run --rm -v "$PWD/backend:/app" -v /tmp:/evidence tests sh -c 'ruff check --no-cache . && ruff format --no-cache --check . && pytest -p no:cacheprovider -q --junitxml=/evidence/agipreve-backend-final.xml'` — **87 passaram, nenhum skip,54.72s**; Ruff passou,81 arquivos formatados. Warning Starlette/httpx não bloqueante.
+- Mobile: `npm run check` — TypeScript/lint passaram; **47 Jest em11 suítes**, suíte Node passou. Exportação Expo web passou com979 módulos.
+- `docker compose config --quiet`, `docker compose up --build -d`, `docker compose exec api alembic current` — concluídos; API/banco saudáveis, **0006_alerts_refresh head** aplicada no desenvolvimento e seed idempotente concluído.
+- `python3 scripts/verify_infrastructure.py` — passou em projeto/volume exclusivos: startup limpo, migrações/seed e persistência após reiniciar PostgreSQL. Somente recursos temporários desse projeto removidos.
+- CT001..018 passaram; benchmark real1000 clientes CPU: treino único0.540008s, inferência P95 **0.016052s**, recálculo P95 **0.016236s**. Não mede P95 operacional ou dispositivo. Evidência [MVP_PERFORMANCE_RESULTS.json](MVP_PERFORMANCE_RESULTS.json).
+- Avaliação final offline seed42: seis perfis,144 registros. Treino07-01, validação08-01, final09-01/2026; híbrido não supera constante nos perfis variável/sazonal. Métricas completas preservadas em [MVP_EVALUATION_RESULTS.json](MVP_EVALUATION_RESULTS.json), sem reescolha pelo holdout.
+- Ensaio HTTP real: seed4241, Pix10.00, saldo50.00→40.00, previsão ready, anterior idêntica, alerta lido, avanço10-24, experimento idempotente e JSON/CSV/HTML. Primeiro ponto mudou -10.38, resultado calculado com retreino, não fixado. Evidência sem credenciais em [MVP_DEMO_EVIDENCE.json](MVP_DEMO_EVIDENCE.json).
+- `git diff --check` e organização documental inspecionados. Nenhum Markdown na raiz além dos convencionais existentes; personas preservadas. Roteiro em `docs/guides/`, refinamento em `docs/requirements/`; relatório principal na localização explicitamente solicitada.
+
+### Correções e regressões
+
+Recuperação pós-commit foi testada antes da regressão completa: uma falha de modelo mantém saldo confirmado e evento rastreável para retry. O teste antigo que contava quatro runs foi atualizado para exigir cinco após introduzir a versão automática, validando também o ID adicional. Holdout foi protegido contra nova seleção no mesmo dataset. Filtros técnicos passaram a controles reais. Chaves duplicadas e tipagem/timeout de estado assíncrono mobile foram corrigidos; assertions preservadas e suíte final reexecutada. Interrupção do servidor impediu recuperar a saída final de uma execução: a regressão foi repetida com JUnit persistente para obter evidência completa.
+
+### Endpoints e migrações
+
+Prefixo `/api/v1/accounts/{id}`: POST/GET `/experiments`; GET `/evaluation/reports?format=json|csv|html`; GET `/forecasts/latest`; GET `/forecasts/{run_id}/series`; POST `/forecasts/simulate`; GET/PUT `/alert-rules`; GET `/alerts`; GET/PATCH `/alerts/{alert_id}`; POST `/forecast-refreshes/retry`. GET autenticado `/api/v1/observability`. Receipts existentes de crédito/débito/Pix acrescentam IDs de previsões, status e correlation_id; contratos anteriores preservados.
+
+Migrações novas: **0005_evaluation** e **0006_alerts_refresh**. Ciclo upgrade/downgrade/upgrade e preservação do ledger testados somente em schemas descartáveis. Desenvolvimento recebeu apenas upgrade normal, sem limpeza de dados.
+
+### Árvore criada/modificada neste lote
+
+```text
+README.md
+backend/
+  app/demo.py (novo)
+  app/api/router.py
+  app/core/{errors.py,telemetry.py (novo)}
+  app/modules/banking/transactions.py
+  app/modules/evaluation/{__init__,__main__,models,router,service}.py (novos)
+  app/modules/forecasting/{router.py,analytics.py (novo),recovery.py (novo),benchmark.py (novo)}
+  app/modules/notifications/{models,router,services}.py (novos)
+  migrations/env.py
+  migrations/versions/{0005_evaluation,0006_alerts_refresh}.py (novas)
+  tests/{test_alerts_experience_integration,test_evaluation,test_evaluation_integration,test_financial_scenarios}.py (novos)
+  tests/{test_forecasting_integration,test_migrations_integration}.py
+mobile/
+  src/app/{_layout,movement,alerts,scenario}.tsx
+  src/app/(tabs)/agipreve.tsx
+  src/features/banking/contracts.ts
+  src/features/forecasting/{api.ts,contracts.ts,PersistedForecast.tsx}
+  src/features/forecasting/{FinancialDashboard,AlertCenter,ApiSimulator,PixForecastImpact}.tsx (novos)
+  src/features/notifications/index.ts
+  __tests__/PersistedForecast.test.tsx
+  __tests__/{FinancialDashboard,AlertCenter,ApiSimulator,PixForecastImpact}.test.tsx (novos)
+  __tests__/notifications.test.ts (novo)
+docs/
+  requirements/sprints-05-07.md (novo)
+  guides/{local-development.md,demo-walkthrough.md (novo)}
+  architecture/api-contracts.md
+  IMPLEMENTATION_STATUS.md
+  MVP_ACCEPTANCE_REPORT.md (novo, solicitado)
+  MVP_{EVALUATION_RESULTS,PERFORMANCE_RESULTS,DEMO_EVIDENCE}.json (novos, evidências fictícias)
+```
+
+Não foram criados serviços externos, dependências novas ou cadastro de dispositivo para push remoto. Próximo trabalho desbloqueado: executar os bloqueios nativos/operacionais e fechar rastreabilidade031–040; somente depois reconsiderar GO. Os limites restantes estão listados integralmente no relatório de aceite, não ocultos sob uma aprovação parcial.

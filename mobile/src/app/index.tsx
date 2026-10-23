@@ -4,7 +4,6 @@ import { Redirect } from "expo-router";
 import {
   ActivityIndicator,
   Text,
-  TextInput,
   View,
   Pressable,
   KeyboardAvoidingView,
@@ -20,7 +19,6 @@ export default function Welcome() {
   const { session, customers, loading, error, loadCustomers, login } =
     useAuth();
   const [selected, setSelected] = useState<string | null>(null);
-  const [password, setPassword] = useState("");
   const [profile, setProfile] = useState("");
   const [page, setPage] = useState(0);
   useEffect(() => {
@@ -88,19 +86,7 @@ export default function Welcome() {
           <Button secondary title="Perfis anteriores" disabled={loading || page === 0} onPress={() => {setSelected(null); setPage(value => value - 1);}} />
           <Button secondary title="Mais perfis" disabled={loading || customers.length < 50} onPress={() => {setSelected(null); setPage(value => value + 1);}} />
         </View>
-        <Text style={ui.label}>Senha de desenvolvimento</Text>
-        <TextInput
-          accessibilityLabel="Senha demonstrativa"
-          value={password}
-          onChangeText={setPassword}
-          style={ui.input}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={128}
-          placeholder="Senha fictícia configurada no ambiente"
-        />
-        <Badge text="Não use uma senha pessoal ou bancária" />
+        <Badge text="Acesso demonstrativo sem senha · dados fictícios" />
         {error && (
           <Text accessibilityRole="alert" style={{ color: theme.colors.red }}>
             {error}
@@ -108,11 +94,10 @@ export default function Welcome() {
         )}
         <Button
           title={loading ? "Conectando…" : "Entrar no protótipo"}
-          disabled={loading || !selected || !password}
+          disabled={loading || !selected}
           onPress={() => {
             if (selected)
-              void login(selected, password)
-                .then(() => setPassword(""))
+              void login(selected)
                 .catch(() => undefined);
           }}
         />

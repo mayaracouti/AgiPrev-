@@ -22,7 +22,7 @@ interface AuthContextValue {
   loading: boolean;
   error: string | null;
   loadCustomers: (query?: CustomerQuery) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (current === customerRequest.current) setLoading(false);
     }
   }, []);
-  async function login(email: string, password: string) {
+  async function login(email: string) {
     if (inFlight.current) return;
     inFlight.current = true;
     setLoading(true);
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await request<LoginResponse>("/auth/login", {
         method: "POST",
-        data: { email, password },
+        data: { email },
       });
       if (
         !data.access_token ||

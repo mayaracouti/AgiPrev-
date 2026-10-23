@@ -24,6 +24,7 @@ class ExpenseModel:
         self.base = 0.0
         self.trees: list[tuple[int, float, float, float]] = []
         self.version = ""
+        self.trained_through: date | None = None
 
     def fit(self, samples: list[tuple[tuple[float, ...], float]]) -> "ExpenseModel":
         if not samples:
@@ -64,7 +65,7 @@ class ExpenseModel:
                 for (x, _), p in zip(samples, prediction, strict=True)
             ]
         digest = hashlib.sha256(json.dumps(samples).encode()).hexdigest()[:16]
-        self.version = "boosted-stumps-v1:" + digest
+        self.version = "boosted-stumps-v2:" + digest
         return self
 
     def predict(self, x: tuple[float, ...]) -> Decimal:
@@ -82,7 +83,72 @@ def variable_observations(rows: list[Observation], recurring_keys: set) -> list[
     return [r for r in rows if r.reference in references or r.reversal_of in references]
 
 
-def project(rows: list[Observation], cutoff: date, horizon: int, method: str = "hybrid") -> dict:
+def train_expense_model(rows: list[Observation], cutoff: date) -> ExpenseModel | None:
+    """Train once on available history; the resulting model accepts other customers' features."""
+    known = eligible(rows, cutoff)
+    start = min((r.occurred_on for r in known), default=cutoff)
+    daily = aggregate(known, start, cutoff)
+    reversed_references = {r.reversal_of for r in known if r.reversal_of}
+    current_patterns = detect_recurrences(
+        [
+            {
+                "description": r.description,
+                "direction": r.direction,
+                "amount": r.amount,
+                "occurred_on": r.occurred_on,
+            }
+            for r in known
+            if not r.reversal_of and r.reference not in reversed_references
+        ],
+        cutoff,
+    )
+    fixed_keys = {
+        (r["description"], r["direction"]) for r in current_patterns if r["direction"] == "debit"
+    }
+    samples = []
+    for i, day_row in enumerate(daily):
+        if i < 7:
+            continue
+        origin = day_row.day - timedelta(days=1)
+        past = eligible(known, origin)
+        reversed_past = {r.reversal_of for r in past if r.reversal_of}
+        past_rows = [r for r in past if not r.reversal_of and r.reference not in reversed_past]
+        patterns = detect_recurrences(
+            [
+                {
+                    "description": r.description,
+                    "direction": r.direction,
+                    "amount": r.amount,
+                    "occurred_on": r.occurred_on,
+                }
+                for r in past_rows
+            ],
+            origin,
+        )
+        keys = {(r["description"], r["direction"]) for r in patterns}
+        # Do not teach fixed expenses as variable before their pattern was known.
+        # Keep both features and labels causal within the retained training origins.
+        if not fixed_keys.issubset(keys):
+            continue
+        historical_variable = variable_observations(past, keys)
+        causal = aggregate(historical_variable, start, origin)
+        target_series = aggregate(variable_observations(known, keys), day_row.day, day_row.day)
+        target = max(Decimal(0), target_series[0].expense)
+        samples.append((features(causal, day_row.day, tuple(patterns)), float(target)))
+    model = ExpenseModel().fit(samples) if samples else None
+    if model is not None:
+        model.trained_through = cutoff
+    return model
+
+
+def project(
+    rows: list[Observation],
+    cutoff: date,
+    horizon: int,
+    method: str = "hybrid",
+    *,
+    expense_model: ExpenseModel | None = None,
+) -> dict:
     if horizon not in (7, 15, 30) or method not in (
         "hybrid",
         "constant",
@@ -114,33 +180,13 @@ def project(rows: list[Observation], cutoff: date, horizon: int, method: str = "
     recurring_keys = {(r["description"], r["direction"]) for r in recurrences}
     variable_rows = variable_observations(known, recurring_keys)
     variable = aggregate(variable_rows, start, cutoff)
-    samples = []
-    for i, day_row in enumerate(daily):
-        if i < 7:
-            continue
-        origin = day_row.day - timedelta(days=1)
-        past = eligible(known, origin)
-        reversed_past = {r.reversal_of for r in past if r.reversal_of}
-        past_rows = [r for r in past if not r.reversal_of and r.reference not in reversed_past]
-        patterns = detect_recurrences(
-            [
-                {
-                    "description": r.description,
-                    "direction": r.direction,
-                    "amount": r.amount,
-                    "occurred_on": r.occurred_on,
-                }
-                for r in past_rows
-            ],
-            origin,
-        )
-        keys = {(r["description"], r["direction"]) for r in patterns}
-        historical_variable = variable_observations(past, keys)
-        causal = aggregate(historical_variable, start, origin)
-        target_series = aggregate(variable_observations(known, keys), day_row.day, day_row.day)
-        target = max(Decimal(0), target_series[0].expense)
-        samples.append((features(causal, day_row.day, tuple(patterns)), float(target)))
-    model = ExpenseModel().fit(samples) if samples else None
+    model = expense_model
+    if model is not None and (
+        not model.version or model.trained_through is None or model.trained_through > cutoff
+    ):
+        raise ValueError("Model must be fitted without data beyond the forecast cutoff")
+    if model is None and method == "hybrid":
+        model = train_expense_model(known, cutoff)
     version = (
         model.version
         if method == "hybrid" and model

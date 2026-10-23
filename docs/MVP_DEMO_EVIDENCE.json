@@ -1,0 +1,262 @@
+{
+  "seed": 4241,
+  "algorithm_seed": 42,
+  "account_id": "42bc85f7-99d1-5fbd-b2d8-78bf506e6e35",
+  "before_forecast_id": "de97a1b7-a47f-4515-a642-781caaede77d",
+  "after_forecast_id": "d742f734-105f-4202-b84c-0625da36851c",
+  "previous_forecast_id": "de97a1b7-a47f-4515-a642-781caaede77d",
+  "balance_before": "50.00",
+  "balance_after": "40.00",
+  "pix_amount": "10.00",
+  "forecast_status": "ready",
+  "correlation_id": "8ffe99db-7d9e-41be-a070-0138ca01f74e",
+  "first_balance_difference": "-10.38",
+  "alert_id": "8d0688a8-19bd-4b0e-af6b-c199bc5cc2bc",
+  "alert_read": true,
+  "current_date": "2026-10-24",
+  "experiment_id": "64bf1222-a3f5-4884-8ea3-f0c3c7a610f4",
+  "experiment_version": "evaluation-v1",
+  "dataset_version": "ad8d9b2139e53770fbdb27fbbcd79d0c0410a7825da7cab4221654c664676dc4",
+  "selected_model": "hybrid",
+  "final_metrics": [
+    {
+      "model": "constant",
+      "horizon": 7,
+      "metrics": {
+        "mae": "904.4228571428571428571428571",
+        "mse": "1438976.816428571428571428571",
+        "rmse": "1199.573597754040028693150791",
+        "bias": "-885.40",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 7
+      }
+    },
+    {
+      "model": "moving_average",
+      "horizon": 7,
+      "metrics": {
+        "mae": "983.20",
+        "mse": "1683662.287142857142857142857",
+        "rmse": "1297.560128526943117729444368",
+        "bias": "-983.20",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 7
+      }
+    },
+    {
+      "model": "seasonal",
+      "horizon": 7,
+      "metrics": {
+        "mae": "992.9442857142857142857142857",
+        "mse": "1696904.033214285714285714286",
+        "rmse": "1302.652690940407843245365491",
+        "bias": "-990.5242857142857142857142857",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 7
+      }
+    },
+    {
+      "model": "hybrid",
+      "horizon": 7,
+      "metrics": {
+        "mae": "57.54285714285714285714285714",
+        "mse": "5033.597857142857142857142857",
+        "rmse": "70.94785308339398329574953034",
+        "bias": "55.22857142857142857142857143",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 7
+      }
+    },
+    {
+      "model": "constant",
+      "horizon": 15,
+      "metrics": {
+        "mae": "959.8546666666666666666666667",
+        "mse": "1216611.40756",
+        "rmse": "1103.001091368453723888584011",
+        "bias": "-950.9773333333333333333333333",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 15
+      }
+    },
+    {
+      "model": "moving_average",
+      "horizon": 15,
+      "metrics": {
+        "mae": "1146.577333333333333333333333",
+        "mse": "1672889.45096",
+        "rmse": "1293.402277313597434196281630",
+        "bias": "-1146.577333333333333333333333",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 15
+      }
+    },
+    {
+      "model": "seasonal",
+      "horizon": 15,
+      "metrics": {
+        "mae": "1156.768666666666666666666667",
+        "mse": "1693943.28402",
+        "rmse": "1301.515764030539892868737975",
+        "bias": "-1155.639333333333333333333333",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 15
+      }
+    },
+    {
+      "model": "hybrid",
+      "horizon": 15,
+      "metrics": {
+        "mae": "140.516",
+        "mse": "28342.30716",
+        "rmse": "168.3517364329812904707059335",
+        "bias": "139.436",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 15
+      }
+    },
+    {
+      "model": "constant",
+      "horizon": 30,
+      "metrics": {
+        "mae": "854.8786666666666666666666667",
+        "mse": "893039.74162",
+        "rmse": "945.0077997667532479338244365",
+        "bias": "-850.44",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 30
+      }
+    },
+    {
+      "model": "moving_average",
+      "horizon": 30,
+      "metrics": {
+        "mae": "1229.415",
+        "mse": "1697938.10187",
+        "rmse": "1303.049539300022161670856745",
+        "bias": "-1229.415",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 30
+      }
+    },
+    {
+      "model": "seasonal",
+      "horizon": 30,
+      "metrics": {
+        "mae": "1238.194666666666666666666667",
+        "mse": "1718390.44888",
+        "rmse": "1310.873925623665763513848601",
+        "bias": "-1237.63",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 30
+      }
+    },
+    {
+      "model": "hybrid",
+      "horizon": 30,
+      "metrics": {
+        "mae": "279.3066666666666666666666667",
+        "mse": "104244.0689533333333333333333",
+        "rmse": "322.8685010237656078019957252",
+        "bias": "278.7666666666666666666666667",
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "f2": null,
+        "lead_time_days": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "samples": 30
+      }
+    }
+  ],
+  "assertions": [
+    "login HTTP",
+    "simulation does not change balance",
+    "Pix idempotent",
+    "old forecast immutable",
+    "alert read persists",
+    "future observed null",
+    "experiment idempotent",
+    "JSON CSV HTML report responses"
+  ],
+  "device_validation": "not_executed"
+}

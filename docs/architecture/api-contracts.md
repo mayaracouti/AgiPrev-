@@ -78,3 +78,25 @@ Todas as rotas abaixo exigem sessão e propriedade da conta, com prefixo `/api/v
 `ForecastRun` inclui UUID, data-base, horizonte, método, model_version, dataset_version, seed, points, risk e estimate_notice. Cada ponto contém data, receitas, despesas fixas/variáveis/totais, saldo e eventos mensais previstos. Valores são strings decimais. Risco é a primeira data com saldo negativo e seu valor, ou null; não é probabilidade calibrada. Os tipos compartilhados ficam em `mobile/src/features/forecasting/contracts.ts`.
 
 A migração `0004_forecasts` adiciona disponibilidade e vínculo de estorno ao ledger e cria runs/pontos com NUMERIC(18,2). Triggers PostgreSQL rejeitam UPDATE/DELETE nos snapshots. O payload JSON preserva detalhes e os pontos guardam os valores financeiros em NUMERIC. O motor não lê eventos agendados futuros.
+
+## Avaliação, experiência e alertas — TASK-041 a 058
+
+Prefixo autenticado `/api/v1/accounts/{account_id}`; conta alheia retorna404:
+
+| Método/rota | Comportamento |
+| --- | --- |
+| POST/GET `/experiments` | Datas train_end/validation_end/final_end e seed42; retorna ID, experiment_version, dataset, modelo/artefato, hiperparâmetros, seleção e métricas. Repetição exata recupera registro; nova seleção no mesmo dataset final recebe409. |
+| GET `/evaluation/reports` | `format=json|csv|html`, filtros `model`, `horizon`, `profile`, `partition`; HTML tem controles de filtro. O perfil não amplia autorização para contas de terceiros. |
+| GET `/forecasts/latest` | `{forecast, current_balance, current_date, stale, future_balance, income, risk}`; filtro opcional horizon7/15/30. Sem snapshot: forecast=null e stale=true. |
+| GET `/forecasts/{run_id}/series` | Pontos por data com predicted_balance/expense e observed_balance/expense; observado futuro=null; desvio em reais/percentual e elegibilidade condicionada a déficit atual não obsoleto. |
+| POST `/forecasts/simulate` | `{amount:"10.00",horizon:30}` → before/after/amount/hypothetical/persisted=false; nenhum ledger/run/alerta inserido. |
+| GET/PUT `/alert-rules` | `{enabled:true,critical_days:3}`, janela0..30. |
+| GET `/alerts` | Até100 alertas da conta; UUID, run_id, severidade, explicação, data/valor de déficit, recomendação e leitura. |
+| GET/PATCH `/alerts/{alert_id}` | Detalhe e marcação `{"read":true}` idempotente. |
+| POST `/forecast-refreshes/retry` | Reprocessa até20 eventos pendentes/failed, retornando status e correlation_id. Não refaz operação financeira. |
+
+`GET /api/v1/observability` exige sessão; expõe contadores locais ao processo, sem detalhes bancários. Respostas HTTP trazem X-Request-ID/X-Correlation-ID; logs JSON não incluem corpo, senha ou token. Não existe coletor externo/garantia de retenção de logs implantada.
+
+Créditos/débitos/Pix mantêm contratos anteriores e acrescentam `forecast_id`, `previous_forecast_id`, `forecast_status` e `correlation_id` ao receipt. Ledger e evento de recálculo são confirmados antes da inferência. Uma falha do modelo mantém status failed recuperável; não desfaz a transação. Novos runs também podem gerar alertas deduplicados por conta/data. ForecastRun aceita campos opcionais experiment_id/experiment_version, mas previsões de treino individual não são vinculadas artificialmente a um experimento diferente; ID/version aparecem no relatório do experimento efetivamente executado.
+
+Migrações `0005_evaluation` (experimentos imutáveis) e `0006_alerts_refresh` (regras, alertas, eventos duráveis) seguem `0004_forecasts`. Hiperparâmetros/artefatos ML são JSON; dinheiro persiste NUMERIC e trafega como string decimal. Nenhuma API de dispositivo/push remoto foi necessária para notificações locais.

@@ -172,3 +172,73 @@ def test_dataset_exports_only_observations_available_in_each_partition(tmp_path)
     assert train["observations"] == []
     assert all(D(r["expense"]) == 0 for r in train["series"])
     assert validation["observations"][0]["available_on"] == str(late.available_on)
+
+
+@pytest.mark.parametrize(
+    "direction,day,description,amount",
+    [
+        ("credit", 5, "Salary", "1000"),
+        ("debit", 8, "Rent", "300"),
+    ],
+)
+def test_early_monthly_posting_is_not_projected_twice(direction, day, description, amount):
+    history = [
+        row(str(month), date(2026, month, day), direction, amount, description=description)
+        for month in (1, 2, 3)
+    ]
+    history.append(row("early", date(2026, 4, day - 2), direction, amount, description=description))
+    cutoff = date(2026, 4, day - 1)
+    forecast = project(history, cutoff, 30)
+    events = [event for point in forecast["points"] for event in point["events"]]
+    assert events == []  # Next month's nominal date is 31 days after this cutoff.
+    later = project(history, date(2026, 4, day + 1), 30)
+    events = [event for point in later["points"] for event in point["events"]]
+    assert len(events) == 1
+    assert events[0]["date"] == str(date(2026, 5, day))
+    assert Decimal(events[0]["amount"]) == Decimal(amount)
+    assert events[0]["uncertainty"] == "uncalibrated"
+    assert events[0]["method"] == "monthly-heuristic-v2"
+
+
+def test_model_transfers_to_unseen_customer_without_retraining():
+    from unittest.mock import patch
+
+    from app.modules.forecasting.engine import train_expense_model
+    from app.modules.simulation.generator import financial_rows
+
+    cutoff = date(2026, 10, 23)
+
+    def customer(index):
+        return [
+            Observation(
+                r["reference"],
+                r["occurred_on"],
+                r["occurred_on"],
+                r["direction"],
+                r["amount"],
+                r["description"],
+            )
+            for r in financial_rows(42, index)
+        ]
+
+    training, unseen = customer(0), customer(1)
+    assert not {r.reference for r in training} & {r.reference for r in unseen}
+    model = train_expense_model(training, cutoff)
+    assert model is not None and model.trees
+    version, trees = model.version, tuple(model.trees)
+    with patch.object(ExpenseModel, "fit", side_effect=AssertionError("Unexpected retraining")):
+        result = project(unseen, cutoff, 30, expense_model=model)
+    assert result["model_version"] == version and tuple(model.trees) == trees
+    assert all(p["variable_expense"] >= 0 for p in result["points"])
+    with pytest.raises(ValueError, match="cutoff"):
+        project(unseen, cutoff - timedelta(days=1), 7, expense_model=model)
+
+
+def test_fixed_only_history_does_not_train_variable_expenses_from_rent():
+    history = [
+        row(str(month), date(2026, month, 8), "debit", "300", description="Rent")
+        for month in (1, 2, 3)
+    ]
+    result = project(history, date(2026, 3, 31), 15)
+    assert sum(p["fixed_expense"] for p in result["points"]) == Decimal("300")
+    assert all(p["variable_expense"] == 0 for p in result["points"])
