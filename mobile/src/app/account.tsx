@@ -46,7 +46,7 @@ export default function Account() {
           <View style={{ flex: 1, gap: 5 }}>
             <Text style={ui.heading}>{profile.name}</Text>
             <Text style={ui.body}>{profile.description}</Text>
-            <Badge text="Perfil fictício · sessão local" tone="green" />
+            <Badge text="Cenário fictício · controles locais" tone="green" />
           </View>
         </View>
       </Card>
@@ -138,14 +138,18 @@ export default function Account() {
       <Card>
         <Text style={ui.heading}>Dados e segurança</Text>
         <Text style={ui.body}>
-          A sessão é validada pelo servidor e só consulta a conta do cliente autenticado. Nunca informe CPF ou dados bancários reais. Os controles de cenário desta tela alteram apenas a demonstração visual.
+          A sessão é validada pelo servidor e só consulta a conta do cliente
+          autenticado. Nunca informe CPF ou dados bancários reais. Os controles
+          de cenário desta tela alteram apenas a demonstração visual.
         </Text>
       </Card>
       <Button
         secondary
         title="Sair do protótipo"
         onPress={() => {
-          void signOut().then(() => router.replace("/")).catch(cause => setMessage(errorMessage(cause)));
+          void signOut()
+            .then(() => router.replace("/"))
+            .catch((cause) => setMessage(errorMessage(cause)));
         }}
       />
       <Modal

@@ -17,6 +17,4 @@ class ErrorResponse(BaseModel):
     request_id: str
 
 
-ERROR_RESPONSES = {
-    status: {"model": ErrorResponse} for status in (401, 403, 404, 422, 500, 503)
-}
+ERROR_RESPONSES = {status: {"model": ErrorResponse} for status in (401, 403, 404, 422, 500, 503)}

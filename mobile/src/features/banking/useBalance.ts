@@ -1,28 +1,54 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth } from '@/auth/AuthProvider';
-import { request } from '@/services/http';
-import { ApiError, errorMessage } from '@/services/errors';
-import { isBalanceResponse, type BalanceResponse } from './contracts';
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/auth/AuthProvider";
+import { request } from "@/services/http";
+import { ApiError, errorMessage } from "@/services/errors";
+import { isBalanceResponse, type BalanceResponse } from "./contracts";
 export function useBalance() {
   const { session } = useAuth();
   const accountId = session?.accounts[0]?.id;
-  const [data, setData] = useState<BalanceResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const active = useRef<AbortController | null>(null);
-  const refresh = useCallback(async () => {
-    active.current?.abort();
-    const controller = new AbortController(); active.current = controller;
-    setData(null); setError(null);
-    if (!accountId) { setLoading(false); return; }
-    setLoading(true);
-    try {
-      const result: unknown = await request(`/accounts/${accountId}/balance`, { signal: controller.signal });
-      if (!isBalanceResponse(result, accountId)) throw new ApiError(null, 'INVALID_RESPONSE', 'Não foi possível validar o saldo recebido.');
-      if (!controller.signal.aborted) setData(result);
-    } catch (cause) { if (!controller.signal.aborted) setError(errorMessage(cause)); }
-    finally { if (!controller.signal.aborted) setLoading(false); }
-  }, [accountId]);
-  useEffect(() => { void refresh(); return () => active.current?.abort(); }, [refresh]);
-  return { data, loading, error, refresh };
+  const [version, setVersion] = useState(0);
+  const [result, setResult] = useState<{
+    account: string;
+    version: number;
+    data: BalanceResponse | null;
+    error: string | null;
+  } | null>(null);
+  const refresh = useCallback(() => setVersion((value) => value + 1), []);
+  useEffect(() => {
+    if (!accountId) return;
+    const controller = new AbortController();
+    void request<unknown>(`/accounts/${accountId}/balance`, {
+      signal: controller.signal,
+    })
+      .then((data) => {
+        if (!isBalanceResponse(data, accountId))
+          throw new ApiError(
+            null,
+            "INVALID_RESPONSE",
+            "Não foi possível validar o saldo recebido.",
+          );
+        if (!controller.signal.aborted)
+          setResult({ account: accountId, version, data, error: null });
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted)
+          setResult({
+            account: accountId,
+            version,
+            data: null,
+            error: errorMessage(cause),
+          });
+      });
+    return () => controller.abort();
+  }, [accountId, version]);
+  const current =
+    result?.account === accountId && result?.version === version
+      ? result
+      : null;
+  return {
+    data: current?.data ?? null,
+    loading: Boolean(accountId && !current),
+    error: current?.error ?? null,
+    refresh,
+  };
 }

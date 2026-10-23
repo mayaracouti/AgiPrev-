@@ -29,10 +29,8 @@ export default function Movement() {
   const [error, setError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const locked = useRef(false);
-  const id = useRef(
-    `manual-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  );
-  const previous = useRef(currentSnapshot(state));
+  const id = useRef<string | null>(null);
+  const [previous, setPrevious] = useState(() => currentSnapshot(state));
   const cents = parseCents(value);
   function submit() {
     if (locked.current) return;
@@ -42,6 +40,8 @@ export default function Movement() {
       );
       return;
     }
+    id.current ??= `manual-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setPrevious(currentSnapshot(state));
     const message = confirm({
       id: id.current,
       date: state.date,
@@ -81,13 +81,15 @@ export default function Movement() {
               <Badge text="Simulação confirmada nesta sessão" tone="green" />
               <Text style={ui.amount}>{money(cents!)}</Text>
               <Text style={ui.label}>{description}</Text>
-              <Text style={ui.body}>Saldo do cenário atualizado: {money(balance)}</Text>
+              <Text style={ui.body}>
+                Saldo do cenário atualizado: {money(balance)}
+              </Text>
             </Card>
             <Card>
               <Text style={ui.heading}>Sua previsão também mudou</Text>
               <Text style={ui.body}>
-                Cenário anterior: {previous.current.id} ·{" "}
-                {money(previous.current.points[6]!.balance)} em 7 dias
+                Cenário anterior: {previous.id} ·{" "}
+                {money(previous.points[6]!.balance)} em 7 dias
               </Text>
               <Text style={ui.body}>
                 Novo cenário: {currentSnapshot(state).id} ·{" "}

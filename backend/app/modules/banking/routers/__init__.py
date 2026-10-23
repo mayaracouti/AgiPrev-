@@ -6,7 +6,10 @@ from fastapi import APIRouter, Query, Response
 from app.modules.auth.dependencies import CurrentCustomer, Database
 from app.modules.banking.repositories import BankingRepository
 from app.modules.banking.schemas import (
-    AccountResponse, BalanceResponse, CustomerResponse, LedgerResponse,
+    AccountResponse,
+    BalanceResponse,
+    CustomerResponse,
+    LedgerResponse,
 )
 from app.modules.banking.services import BankingService
 
@@ -37,7 +40,9 @@ def balance(account_id: UUID, session: Database, customer: CurrentCustomer, resp
 
 @router.get("/accounts/{account_id}/ledger", response_model=list[LedgerResponse])
 def ledger(
-    account_id: UUID, session: Database, customer: CurrentCustomer,
+    account_id: UUID,
+    session: Database,
+    customer: CurrentCustomer,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):

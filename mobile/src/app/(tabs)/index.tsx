@@ -125,7 +125,13 @@ export default function Home() {
                   flexShrink: 1,
                 }}
               >
-                {visible ? bankBalance.data ? formatDecimal(bankBalance.data.balance) : bankBalance.loading ? "Consultando…" : "Indisponível" : "R$ ••••••"}
+                {visible
+                  ? bankBalance.data
+                    ? formatDecimal(bankBalance.data.balance)
+                    : bankBalance.loading
+                      ? "Consultando…"
+                      : "Indisponível"
+                  : "R$ ••••••"}
               </Text>
               <Pressable
                 accessibilityRole="button"
@@ -198,10 +204,29 @@ export default function Home() {
           }}
         >
           <DemoNotice />
-          <BalanceCard data={bankBalance.data} loading={bankBalance.loading} error={bankBalance.error} onRetry={() => { void bankBalance.refresh(); }} visible={visible} />
-          <Button secondary title="Conta e preferências" onPress={() => router.push('/account')} />
+          <BalanceCard
+            data={bankBalance.data}
+            loading={bankBalance.loading}
+            error={bankBalance.error}
+            onRetry={() => {
+              void bankBalance.refresh();
+            }}
+            visible={visible}
+          />
+          <Button
+            secondary
+            title="Conta e preferências"
+            onPress={() => router.push("/account")}
+          />
           <ConnectivityCard />
-          <Card><Badge text="Cenário visual independente" tone="amber" /><Text style={ui.body}>Saldo do cenário: {visible ? money(balance) : '••••'}. Pix, receitas e despesas simulados abaixo alteram apenas este cenário. Não substituem o saldo confirmado no servidor.</Text></Card>
+          <Card>
+            <Badge text="Cenário visual independente" tone="amber" />
+            <Text style={ui.body}>
+              Saldo do cenário: {visible ? money(balance) : "••••"}. Pix,
+              receitas e despesas simulados abaixo alteram apenas este cenário.
+              Não substituem o saldo confirmado no servidor.
+            </Text>
+          </Card>
           <Section
             title="AgiPrevê"
             action="Ver análise"

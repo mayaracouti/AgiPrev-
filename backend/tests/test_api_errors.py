@@ -14,5 +14,22 @@ def test_missing_token_invalid_login_body_and_unknown_route_are_structured(clien
 def test_openapi_exposes_money_as_string_and_bearer_security(client):
     schema = client.get("/openapi.json").json()
     assert "/api/v1/accounts/{account_id}/balance" in schema["paths"]
-    assert schema["components"]["schemas"]["BalanceResponse"]["properties"]["balance"]["type"] == "string"
+    assert (
+        schema["components"]["schemas"]["BalanceResponse"]["properties"]["balance"]["type"]
+        == "string"
+    )
     assert schema["components"]["securitySchemes"]["HTTPBearer"]["scheme"] == "bearer"
+
+
+def test_unhandled_errors_have_no_private_details(client):
+    from fastapi.testclient import TestClient
+
+    @client.app.get("/test-only-failure")
+    def failure():
+        raise RuntimeError("private-diagnostic")
+
+    with TestClient(client.app, raise_server_exceptions=False) as safe_client:
+        response = safe_client.get("/test-only-failure")
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "INTERNAL_ERROR"
+    assert "private-diagnostic" not in response.text

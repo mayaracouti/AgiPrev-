@@ -13,8 +13,8 @@ function Navigation() {
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="transactions" />
-        <Stack.Screen name="account" />
-        <Stack.Screen name="scenario-history" />
+          <Stack.Screen name="account" />
+          <Stack.Screen name="scenario-history" />
           <Stack.Screen name="movement" options={{ presentation: "modal" }} />
           <Stack.Screen name="alerts" />
           <Stack.Screen name="scenario" />
@@ -27,9 +27,11 @@ function Navigation() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AuthProvider><DemoProvider>
-        <Navigation />
-      </DemoProvider></AuthProvider>
+      <AuthProvider>
+        <DemoProvider>
+          <Navigation />
+        </DemoProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

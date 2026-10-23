@@ -18,8 +18,10 @@ def install_error_handlers(app: FastAPI) -> None:
     def response(request: Request, status: int, code: str, message: str, details=None):
         return JSONResponse(
             status_code=status,
-            content={"error": {"code": code, "message": message, "details": details or []},
-                     "request_id": getattr(request.state, "request_id", str(uuid4()))},
+            content={
+                "error": {"code": code, "message": message, "details": details or []},
+                "request_id": getattr(request.state, "request_id", str(uuid4())),
+            },
             headers={"WWW-Authenticate": "Bearer"} if status == 401 else None,
         )
 
@@ -36,17 +38,27 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request: Request, exc: HTTPException):
-        messages = {401: "Sessão inválida ou expirada.", 403: "Acesso não permitido.",
-                    404: "Recurso não encontrado.", 405: "Método não permitido.",
-                    503: "Serviço temporariamente indisponível."}
-        return response(request, exc.status_code, f"HTTP_{exc.status_code}",
-                        messages.get(exc.status_code, "Não foi possível concluir a solicitação."))
+        messages = {
+            401: "Sessão inválida ou expirada.",
+            403: "Acesso não permitido.",
+            404: "Recurso não encontrado.",
+            405: "Método não permitido.",
+            503: "Serviço temporariamente indisponível.",
+        }
+        return response(
+            request,
+            exc.status_code,
+            f"HTTP_{exc.status_code}",
+            messages.get(exc.status_code, "Não foi possível concluir a solicitação."),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):
         # Never echo submitted passwords, tokens, URLs or raw inputs in error responses.
-        details = [{"field": ".".join(str(part) for part in item["loc"]),
-                    "code": item["type"]} for item in exc.errors()]
+        details = [
+            {"field": ".".join(str(part) for part in item["loc"]), "code": item["type"]}
+            for item in exc.errors()
+        ]
         return response(request, 422, "VALIDATION_ERROR", "Confira os campos informados.", details)
 
     @app.exception_handler(SQLAlchemyError)

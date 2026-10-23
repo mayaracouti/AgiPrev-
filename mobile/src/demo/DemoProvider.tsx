@@ -35,7 +35,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (auth.session) {
       guard.current.clear();
-      dispatch({ type: "reset", profileId: auth.session.customer.demo_profile, seed: 42 });
+      dispatch({
+        type: "reset",
+        profileId: auth.session.customer.demo_profile,
+        seed: 42,
+      });
     }
   }, [auth.session]);
   function confirm(transaction: Transaction) {

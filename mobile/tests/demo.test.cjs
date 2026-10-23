@@ -127,3 +127,74 @@ test("report previews never fabricate evaluation metrics or a completed backtest
   assert.ok(Object.values(report.metrics).every((value) => value === null));
   assert.equal(report.recalculationP95Ms, null);
 });
+
+const { validateApiUrl } = loadFixture("../src/config/validateEnv.ts");
+const { formatDecimal, isBalanceResponse } = loadFixture(
+  "../src/features/banking/contracts.ts",
+);
+const { normalizeHttpError } = loadFixture("../src/services/errors.ts");
+test("API configuration rejects credentials, invalid schemes and missing version prefixes", () => {
+  assert.equal(
+    validateApiUrl("http://10.0.2.2:8000/api/v1/"),
+    "http://10.0.2.2:8000/api/v1",
+  );
+  for (const value of [
+    undefined,
+    "",
+    "broken",
+    "file:///api/v1",
+    "http://a:b@localhost/api/v1",
+    "http://localhost/wrong",
+  ])
+    assert.throws(() => validateApiUrl(value));
+});
+test("REST monetary strings stay exact at NUMERIC(18,2) boundaries", () => {
+  assert.equal(
+    formatDecimal("9999999999999999.99"),
+    "R$ 9.999.999.999.999.999,99",
+  );
+  assert.equal(formatDecimal("-0.29"), "−R$ 0,29");
+  assert.equal(
+    isBalanceResponse({ account_id: "a", currency: "BRL", balance: 0 }, "a"),
+    false,
+  );
+  assert.equal(
+    isBalanceResponse(
+      { account_id: "a", currency: "BRL", balance: "0.00" },
+      "a",
+    ),
+    true,
+  );
+});
+test("network, timeout, validation and server errors are distinguishable without exposing diagnostics", () => {
+  assert.equal(
+    normalizeHttpError("ERR_NETWORK", null, undefined).code,
+    "NETWORK_ERROR",
+  );
+  assert.equal(
+    normalizeHttpError("ECONNABORTED", null, undefined).code,
+    "TIMEOUT",
+  );
+  assert.equal(
+    normalizeHttpError("ERR_CANCELED", null, undefined).code,
+    "CANCELLED",
+  );
+  assert.equal(
+    normalizeHttpError(undefined, 422, {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Confira os campos.",
+        details: [],
+      },
+      request_id: "test",
+    }).requestId,
+    "test",
+  );
+  assert.ok(
+    !normalizeHttpError(
+      undefined,
+      500,
+      "private SQL diagnostic",
+    ).message.includes("private"),
+  );
+});

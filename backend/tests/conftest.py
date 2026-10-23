@@ -2,6 +2,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 
+@pytest.fixture(autouse=True)
+def isolated_settings(monkeypatch):
+    from app.core.config import Settings, get_settings
+
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setenv(
@@ -36,6 +46,7 @@ def pg_engine(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", url)
     monkeypatch.setenv("APP_ENV", "test")
     from app.core.config import get_settings
+
     get_settings.cache_clear()
     schema = f"test_{uuid4().hex}"
     admin = create_engine(url)
@@ -68,8 +79,10 @@ def pg_client(pg_engine):
     with Session(engine) as session:
         seed(session, "demo-test-only-2026")
         application = create_app()
+
         def override():
             yield session
+
         application.dependency_overrides[get_session] = override
         with TestClient(application) as test_client:
             yield test_client, session

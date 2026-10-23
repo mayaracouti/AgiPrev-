@@ -31,10 +31,10 @@
 │   ├── .env.example
 │   ├── tests/                 # Testes das interações e regras demonstrativas
 │   └── src/
-│       ├── app/                # Acesso, três abas e fluxos auxiliares Expo Router
+│       ├── app/                # Acesso, quatro abas e fluxos auxiliares Expo Router
 │       ├── components/         # Componentes compartilhados
 │       ├── config/             # Variáveis públicas
-│       ├── services/           # Cliente HTTP com Fetch e timeout
+│       ├── services/           # Cliente HTTP Axios com timeout
 │       ├── theme/              # Tema inicial
 │       ├── types/              # Contratos compartilhados
 │       ├── demo/               # Estado e cenários determinísticos em memória
@@ -67,7 +67,7 @@ O mobile executa no host com Expo e conecta à API HTTP. O Docker executa API, t
 
 `src/demo/DemoProvider.tsx` compartilha a sessão e o estado entre abas. `src/demo/model.ts` contém fixtures determinísticas e regras locais, sem chamadas HTTP ou treino de modelos. Valores financeiros são centavos inteiros na memória do frontend; a conversão para reais ocorre apenas na apresentação e nos gráficos. A futura fronteira REST mantém strings decimais e o backend mantém Decimal/NUMERIC.
 
-A sessão começa por seleção de perfil fictício. As rotas internas usam `Stack.Protected`; essa proteção organiza a navegação e não substitui autenticação/autorização no servidor.
+A sessão começa por seleção de perfil fictício e login pela API. As rotas internas usam `Stack.Protected`; essa proteção organiza a navegação e não substitui autenticação/autorização no servidor.
 
 Cada movimentação confirmada gera uma versão ilustrativa de 30 dias com data de geração, horizonte, nome/versão do cenário, saldo de referência, motivo e pontos diários. A interface permite selecionar 7, 15 ou 30 dias. Uma confirmação repetida com o mesmo identificador não altera o saldo novamente. O formulário também impede reenvio após sucesso.
 
@@ -81,8 +81,12 @@ Todos os dados são voláteis. Reiniciar o app, entrar novamente ou regenerar o 
 
 ## Configuração e segurança local
 
-O container Python usa usuário sem privilégios. PostgreSQL publica a porta somente em loopback e possui volume persistente. A API publica a porta 8000 para permitir acesso por celular na rede local; este Compose é para desenvolvimento com dados fictícios, sem autenticação ou TLS. Não expor esse ambiente à internet.
+O container Python usa usuário sem privilégios. PostgreSQL publica a porta somente em loopback e possui volume persistente. A API publica a porta 8000 para permitir acesso por celular na rede local; este Compose é para desenvolvimento com dados fictícios, com autenticação fictícia e sem TLS. Não expor esse ambiente à internet.
 
 As credenciais ficam em arquivos `.env` ignorados pelo Git. `.env.example` usa placeholders. Nunca colocar segredos em `EXPO_PUBLIC_*`, respostas HTTP ou logs. CORS utiliza origens explícitas e não substitui autenticação. Dependências Python têm intervalos de versão delimitados; a resolução exata e os lockfiles permanecem pendentes enquanto os registros de pacotes não estiverem acessíveis.
 
 Procedimentos e limitações verificadas estão no [guia local](../guides/local-development.md).
+
+## Estado das Sprints 1 e 2
+
+As descrições anteriores de estado volátil referem-se aos cenários visuais. Clientes, contas, sessões e ledger usam PostgreSQL; a revisão `0002_accounts_auth_ledger` cria suas tabelas. A API de negócio existe em `/api/v1`; os contratos estão em [api-contracts.md](api-contracts.md). O AuthProvider controla login, expiração e logout pela API; DemoProvider mantém somente cenários locais. Saldo e extrato confirmados usam Axios sem fallback para fixtures. As quatro abas são Início, Extrato, Pix e AgiPrevê; Conta é auxiliar.

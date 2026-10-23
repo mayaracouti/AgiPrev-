@@ -4,7 +4,7 @@
 
 Docker Engine com permissão de acesso ao daemon e Docker Compose v2 ou superior. Node.js 22.13 ou superior (Node 24 LTS recomendado), npm, acesso aos registros npm e PyPI e Expo Go compatível com SDK 57 ou development build. Para executar o backend fora de containers, usar Python 3.12 ou 3.13 com suporte a venv.
 
-O frontend inclui interações demonstrativas em memória; o backend de negócio será integrado posteriormente; consulte o [escopo](../requirements/mvp-scope.md).
+O frontend consulta clientes, sessão, saldo e extrato na API; cenários e Pix visuais continuam locais; consulte o [escopo](../requirements/mvp-scope.md).
 
 ## Configuração
 
@@ -29,7 +29,7 @@ docker compose ps -a
 docker compose logs api migrate
 ```
 
-O PostgreSQL precisa estar saudável; a tarefa `migrate` aplica `alembic upgrade head` e termina com código zero; então a API inicia com reload. O volume `postgres_data` preserva os dados entre reinicializações. A migração inicial cria somente o controle do Alembic, sem schema financeiro.
+O PostgreSQL precisa estar saudável; a tarefa `migrate` aplica `alembic upgrade head` e termina com código zero; então a API inicia com reload. O volume `postgres_data` preserva os dados entre reinicializações. A revisão 0001 inicia a cadeia; a 0002 cria clientes, contas, ledger e sessões. O serviço seed cria os perfis fictícios idempotentemente.
 
 Acesse `http://localhost:8000/docs`, `http://localhost:8000/health/live` e `http://localhost:8000/health/ready`. Ajuste a porta se tiver alterado `API_PORT`.
 
@@ -53,7 +53,7 @@ Ajuste `EXPO_PUBLIC_API_URL` em `mobile/.env` antes de iniciar:
 | Emulador Android padrão | `http://10.0.2.2:8000/api/v1` |
 | Celular físico | `http://IP_LOCAL_DO_COMPUTADOR:8000/api/v1` |
 
-Use a mesma rede local e permita acesso à porta da API no firewall. Variáveis públicas entram no bundle, portanto não armazenam segredos. Reinicie o Metro depois de alterar o `.env`. Os endpoints de negócio ainda não existem. O frontend usa cenários locais e não faz requisições financeiras.
+Use a mesma rede local e permita acesso à porta da API no firewall. Variáveis públicas entram no bundle, portanto não armazenam segredos. Reinicie o Metro depois de alterar o `.env`. Os endpoints de negócio existem em /api/v1. Login e saldo confirmado exigem API disponível e não usam fallback local.
 
 Abra o projeto pelo QR Code ou use `npm run android` / `npm run ios` com os respectivos emuladores instalados. iOS Simulator exige macOS. Consulte a [criação de projetos Expo](https://docs.expo.dev/more/create-expo/) para compatibilidade com Expo Go durante transições de SDK. Notificações push exigem as condições de dispositivo e build descritas na [documentação Expo Notifications](https://docs.expo.dev/versions/latest/sdk/notifications/); a dependência instalada não configura credenciais de push.
 
@@ -106,10 +106,10 @@ docker compose down
 
 ## Roteiro de demonstração do frontend
 
-1. Selecione Gisele, Rafael ou Ana e entre no protótipo, sem usar credenciais reais.
+1. Selecione Gisele, Rafael ou Ana retornados pela API e entre com DEMO_PASSWORD de desenvolvimento, sem usar credenciais reais.
 2. Confira o saldo, oculte os valores e abra o extrato. Filtre por período e categoria ou busque pela descrição.
-3. Registre uma receita, despesa ou Pix fictício. Tente valor inválido e uma saída acima do saldo. Confirme um valor válido uma única vez.
-4. Veja o saldo atualizado e a comparação de cenário antes/depois na confirmação. Abra o AgiPrevê e consulte 7, 15 e 30 dias.
+3. No cenário visual separado, registre uma receita, despesa ou Pix fictício. Tente valor inválido e uma saída acima do saldo. Confirme um valor válido uma única vez.
+4. Veja o saldo do cenário atualizado (o ledger e saldo confirmado no servidor não são alterados) e a comparação de cenário antes/depois na confirmação. Abra o AgiPrevê e consulte 7, 15 e 30 dias.
 5. Em Versões, compare a previsão selecionada com a atual nas mesmas datas. Cada versão mostra metadados e os pontos diários.
 6. Na Conta, avance 1 ou 7 dias e retorne ao Real × previsto. Somente datas já realizadas aparecem nessa comparação.
 7. Use o perfil de orçamento apertado para observar alertas de déficit. Abra o histórico, marque um alerta como lido e avance até sua data para visualizar o resultado sintético posterior.
@@ -128,6 +128,13 @@ npm run android
 
 ## Estado de validação
 
-O log fornecido pelo usuário confirmou o build das imagens, PostgreSQL saudável e a tarefa de migração concluída com código zero. Isso atualiza o bloqueio anterior de inicialização no terminal do usuário; não significa acesso ao Docker liberado dentro desta sessão do agente.
+As evidências atuais por task estão em [IMPLEMENTATION_STATUS](../IMPLEMENTATION_STATUS.md). Os comandos foram executados em 23/10/2026: PostgreSQL real via Compose, testes backend, Ruff, instalação limpa npm, TypeScript, lint, Jest e exportação web. Validação visual Android/iOS não foi executada.
 
-Na implementação do frontend, a instalação npm foi novamente tentada e falhou por resolução DNS (`EAI_AGAIN`). Não foram gerados lockfiles nem declaradas validações de emulador, lint ou TypeScript completo sem as dependências. Com ferramentas recuperadas do cache, foram executados sete testes dos módulos puros, checagem estrita TypeScript do modelo demonstrativo e validação sintática de todos os arquivos TS/TSX. Os testes passaram. A execução visual no Android permanece pendente até a instalação completa.
+Para repetir integração sem tocar no banco de desenvolvimento, execute na raiz:
+
+```bash
+docker compose -f compose.test.yaml up --build --abort-on-container-exit --exit-code-from tests
+python3 scripts/verify_infrastructure.py
+```
+
+O primeiro comando usa banco descartável terminado em `_test`; o segundo cria projeto e volume exclusivos para comprovar persistência após reinício. Migrações destrutivas são executadas somente em schemas de teste isolados.

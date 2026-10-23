@@ -1,12 +1,12 @@
 # Instruções do projeto
 
-## Etapa atual — Frontend demonstrativo do AgiPrevê
+## Etapa atual — Sprints 1 e 2, TASK-001 a TASK-010
 
-A preparação inicial foi concluída. A tarefa atual autoriza implementar o frontend a partir do wireframe fornecido, com navegação, formulários, dados fictícios e interações locais coerentes com os requisitos. Não implementar o backend ou integrar APIs bancárias reais nesta etapa. A autenticação de usuários fictícios agora integra o escopo pelo RF-001; os exemplos antigos de login continuam sendo apenas testes anteriores das personas.
+A tarefa atual autoriza completar e validar fundação, infraestrutura, ambiente, persistência, contratos de API, qualidade, navegação, clientes/contas, autenticação fictícia e consulta de saldo, no frontend e backend. Seguir o refinamento em `docs/requirements/sprints-01-02.md` e atualizar `docs/IMPLEMENTATION_STATUS.md` com evidências por task. Não aprovar tarefas sem execução dos critérios; registrar bloqueios e testes não verificados.
 
-A navegação principal deve conter somente Início, AgiPrevê e Conta. O Laboratório de avaliação não é uma aba da aplicação; pertence a um ambiente técnico separado.
+A TASK-007 define agora as abas Início, Extrato, Pix e AgiPrevê. Preservar a Conta como fluxo auxiliar. O Laboratório de avaliação não é uma aba da aplicação. A orientação anterior de três abas foi substituída explicitamente pela task atual.
 
-Manter as simulações explicitamente identificadas. Não apresentar regras locais como modelo treinado, métricas não calculadas como resultados nem seleção de perfil como autenticação segura. Não usar Supabase do wireframe: a integração futura será com a API FastAPI do projeto.
+Manter as simulações explicitamente identificadas. Não apresentar regras locais como modelo treinado ou métricas não calculadas como resultados. Login e saldo confirmado devem usar a API, sem fixtures substituindo falhas. Preservar cenários visuais anteriores separados do ledger persistido. Não usar Supabase do wireframe: a integração futura será com a API FastAPI do projeto.
 
 Adotar React Native, Expo, TypeScript e Expo Router no mobile; Python, FastAPI, Pydantic, SQLAlchemy 2.x e Alembic no backend; PostgreSQL e Docker Compose na infraestrutura. O backend é um monólito modular com API REST. Não utilizar Next.js nem microserviços.
 

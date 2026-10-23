@@ -12,7 +12,9 @@ class CredentialTests(unittest.TestCase):
         self.assertNotIn("demo-test-only-2026", encoded)
 
     def test_each_hash_has_a_different_salt(self):
-        self.assertNotEqual(hash_password("same-demo-password"), hash_password("same-demo-password"))
+        self.assertNotEqual(
+            hash_password("same-demo-password"), hash_password("same-demo-password")
+        )
 
     def test_token_digest_is_deterministic_without_storing_plain_token(self):
         self.assertEqual(token_hash("demo-token"), token_hash("demo-token"))

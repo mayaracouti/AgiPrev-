@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import AppError
-from app.core.security import hash_password, verify_password, token_hash
+from app.core.security import hash_password, token_hash, verify_password
 from app.modules.auth.models import AuthSession
 from app.modules.banking.models import Customer
 
@@ -20,7 +20,8 @@ def authenticate(session: Session, email: str, password: str) -> tuple[Customer,
         raise AppError(401, "INVALID_CREDENTIALS", "Perfil ou senha demonstrativa inválidos.")
     token = secrets.token_urlsafe(32)
     auth_session = AuthSession(
-        customer_id=customer.id, token_hash=token_hash(token),
+        customer_id=customer.id,
+        token_hash=token_hash(token),
         expires_at=datetime.now(UTC) + timedelta(minutes=get_settings().session_ttl_minutes),
     )
     session.add(auth_session)

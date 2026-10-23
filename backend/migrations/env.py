@@ -3,8 +3,8 @@ from sqlalchemy import create_engine, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
-from app.modules.banking.models import Account, Customer, LedgerEntry  # noqa: F401
 from app.modules.auth.models import AuthSession  # noqa: F401
+from app.modules.banking.models import Account, Customer, LedgerEntry  # noqa: F401
 
 # Import future mapped models here before generating migrations.
 target_metadata = Base.metadata

@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     @field_validator("cors_origins")
     @classmethod
     def explicit_origins(cls, origins: list[str]) -> list[str]:
-        if any(origin == "*" or not origin.startswith(("http://", "https://")) for origin in origins):
+        if any(
+            origin == "*" or not origin.startswith(("http://", "https://")) for origin in origins
+        ):
             raise ValueError("Use explicit HTTP(S) origins")
         return origins
 

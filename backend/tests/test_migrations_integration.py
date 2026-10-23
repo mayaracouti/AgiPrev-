@@ -10,7 +10,10 @@ def test_clean_schema_upgrade_downgrade_upgrade(pg_engine):
     engine, config = pg_engine
     with engine.begin() as connection:
         config.attributes["connection"] = connection
-        assert MigrationContext.configure(connection).get_current_revision() == "0002_accounts_auth_ledger"
+        assert (
+            MigrationContext.configure(connection).get_current_revision()
+            == "0002_accounts_auth_ledger"
+        )
         columns = inspect(connection).get_columns("ledger_entries")
         amount = next(column for column in columns if column["name"] == "amount")
         assert amount["type"].precision == 18 and amount["type"].scale == 2

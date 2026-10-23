@@ -28,3 +28,12 @@ def test_readiness_hides_database_error_details(client):
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "DATABASE_UNAVAILABLE"
     assert "private details" not in response.text
+
+
+def test_root_and_versioned_health_contracts(client):
+    session = Mock()
+    client.app.dependency_overrides[get_session] = lambda: session
+    for path in ("/health", "/api/v1/health"):
+        response = client.get(path)
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}

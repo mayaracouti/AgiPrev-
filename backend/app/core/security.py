@@ -24,4 +24,3 @@ def verify_password(password: str, encoded: str) -> bool:
 
 def token_hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
-

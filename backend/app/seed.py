@@ -1,4 +1,5 @@
 """Idempotent development seed. Never overwrites existing credentials or ledger entries."""
+
 from datetime import date
 from decimal import Decimal
 
@@ -6,8 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.db.session import get_engine
 from app.core.security import hash_password
+from app.db.session import get_engine
 from app.modules.banking.models import Account, Customer, LedgerEntry
 
 PROFILES = (
@@ -21,8 +22,9 @@ def seed(session: Session, password: str) -> None:
     for profile, name, email, opening in PROFILES:
         customer = session.scalar(select(Customer).where(Customer.demo_profile == profile))
         if customer is None:
-            customer = Customer(name=name, email=email, demo_profile=profile,
-                                password_hash=hash_password(password))
+            customer = Customer(
+                name=name, email=email, demo_profile=profile, password_hash=hash_password(password)
+            )
             session.add(customer)
             session.flush()
         account = session.scalar(select(Account).where(Account.customer_id == customer.id))
@@ -33,9 +35,16 @@ def seed(session: Session, password: str) -> None:
         reference = f"opening-{profile}"
         existing = session.scalar(select(LedgerEntry).where(LedgerEntry.reference == reference))
         if existing is None:
-            session.add(LedgerEntry(account_id=account.id, amount=Decimal(opening),
-                                    direction="credit", description="Crédito inicial fictício",
-                                    occurred_on=date(2026, 10, 23), reference=reference))
+            session.add(
+                LedgerEntry(
+                    account_id=account.id,
+                    amount=Decimal(opening),
+                    direction="credit",
+                    description="Crédito inicial fictício",
+                    occurred_on=date(2026, 10, 23),
+                    reference=reference,
+                )
+            )
     session.commit()
 
 

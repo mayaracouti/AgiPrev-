@@ -18,7 +18,8 @@ def login(body: LoginRequest, session: Database, response: Response):
     customer, token, auth = authenticate(session, body.email, body.password.get_secret_value())
     response.headers["Cache-Control"] = "no-store"
     return LoginResponse(
-        access_token=token, expires_at=auth.expires_at,
+        access_token=token,
+        expires_at=auth.expires_at,
         customer=CustomerResponse.model_validate(customer),
         accounts=BankingRepository(session).accounts(customer.id),
     )
