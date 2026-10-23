@@ -1,3 +1,4 @@
+import { financialProfiles, profileNames } from "@/features/banking/contracts";
 import { useEffect, useState } from "react";
 import { Redirect } from "expo-router";
 import {
@@ -11,7 +12,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/auth/AuthProvider";
-import { Screen, Button, Card, Badge, Empty } from "@/components/ui";
+import { Screen, Button, Card, Badge, Empty, Chips } from "@/components/ui";
 import { ConnectivityCard } from "@/components/ConnectivityCard";
 import { Icon } from "@/components/Icon";
 import { ui, theme } from "@/theme";
@@ -20,9 +21,11 @@ export default function Welcome() {
     useAuth();
   const [selected, setSelected] = useState<string | null>(null);
   const [password, setPassword] = useState("");
+  const [profile, setProfile] = useState("");
+  const [page, setPage] = useState(0);
   useEffect(() => {
-    void loadCustomers();
-  }, [loadCustomers]);
+    void loadCustomers({profile: profile || undefined, offset: page * 50});
+  }, [loadCustomers, profile, page]);
   if (session) return <Redirect href="/(tabs)" />;
   return (
     <KeyboardAvoidingView
@@ -47,6 +50,8 @@ export default function Welcome() {
           </Text>
         </LinearGradient>
         <Text style={ui.heading}>Escolha um cliente fictício</Text>
+        <Chips values={["", ...financialProfiles]} value={profile} onChange={value => {setSelected(null); setProfile(value); setPage(0);}} label={id => profileNames[id] ?? "Todos os perfis"} />
+        <Text style={ui.body}>Página {page + 1} · perfis inteiramente fictícios</Text>
         {loading && (
           <ActivityIndicator accessibilityLabel="Carregando perfis ou sessão" />
         )}
@@ -79,6 +84,10 @@ export default function Welcome() {
             </Card>
           </Pressable>
         ))}
+        <View style={ui.grid}>
+          <Button secondary title="Perfis anteriores" disabled={loading || page === 0} onPress={() => {setSelected(null); setPage(value => value - 1);}} />
+          <Button secondary title="Mais perfis" disabled={loading || customers.length < 50} onPress={() => {setSelected(null); setPage(value => value + 1);}} />
+        </View>
         <Text style={ui.label}>Senha de desenvolvimento</Text>
         <TextInput
           accessibilityLabel="Senha demonstrativa"
@@ -112,7 +121,7 @@ export default function Welcome() {
           title="Atualizar lista de clientes"
           disabled={loading}
           onPress={() => {
-            void loadCustomers();
+            void loadCustomers({profile: profile || undefined, offset: page * 50});
           }}
         />
         <ConnectivityCard />

@@ -14,6 +14,8 @@ function Navigation() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="transactions" />
           <Stack.Screen name="account" />
+          <Stack.Screen name="dev-scenario" />
+          <Stack.Screen name="local-movement" options={{ presentation: "modal" }} />
           <Stack.Screen name="scenario-history" />
           <Stack.Screen name="movement" options={{ presentation: "modal" }} />
           <Stack.Screen name="alerts" />

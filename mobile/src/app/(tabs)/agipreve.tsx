@@ -1,3 +1,5 @@
+import { PersistedForecast } from "@/features/forecasting/PersistedForecast";
+import { RecurrencesCard } from "@/features/banking/components/RecurrencesCard";
 import { useState } from "react";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
@@ -32,6 +34,8 @@ export default function Forecast() {
       title="AgiPrevê"
       subtitle="Uma visão clara para você decidir melhor."
     >
+      <PersistedForecast />
+      <RecurrencesCard />
       <Card>
         <Badge
           text={

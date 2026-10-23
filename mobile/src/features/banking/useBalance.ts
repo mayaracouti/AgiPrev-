@@ -3,13 +3,16 @@ import { useAuth } from "@/auth/AuthProvider";
 import { request } from "@/services/http";
 import { ApiError, errorMessage } from "@/services/errors";
 import { isBalanceResponse, type BalanceResponse } from "./contracts";
+import { useBankingVersion } from "./refresh";
 export function useBalance() {
+  const sharedVersion = useBankingVersion();
   const { session } = useAuth();
   const accountId = session?.accounts[0]?.id;
-  const [version, setVersion] = useState(0);
+  const [localVersion, setVersion] = useState(0);
+  const version = `${sharedVersion}:${localVersion}`;
   const [result, setResult] = useState<{
     account: string;
-    version: number;
+    version: string;
     data: BalanceResponse | null;
     error: string | null;
   } | null>(null);

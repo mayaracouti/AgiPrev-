@@ -21,7 +21,7 @@ export default function Home() {
   const bankBalance = useBalance();
   const [visible, setVisible] = useState(true);
   const insets = useSafeAreaInsets();
-  const profile = profileOf(session?.customer.demo_profile ?? state.profileId);
+  const profile = profileOf(state.profileId);
   const snapshot = currentSnapshot(state);
   const risk = snapshot.points.find((p) => p.balance < 0);
   const unread = state.notificationsEnabled
@@ -223,7 +223,7 @@ export default function Home() {
             <Badge text="Cenário visual independente" tone="amber" />
             <Text style={ui.body}>
               Saldo do cenário: {visible ? money(balance) : "••••"}. Pix,
-              receitas e despesas simulados abaixo alteram apenas este cenário.
+              receitas e despesas deste cenário são independentes da conta. Os atalhos acima gravam no servidor.
               Não substituem o saldo confirmado no servidor.
             </Text>
           </Card>

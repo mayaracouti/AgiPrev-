@@ -53,7 +53,7 @@ export default function Account() {
       <Card>
         <View style={ui.row}>
           <Icon name="calendar" />
-          <Text style={ui.heading}>Relógio simulado</Text>
+          <Text style={ui.heading}>Relógio do cenário visual local</Text>
         </View>
         <Text style={ui.amount}>{dateLabel(state.date)}</Text>
         <Text style={ui.body}>
@@ -135,6 +135,8 @@ export default function Account() {
           onPress={() => router.push("/alerts")}
         />
       </Card>
+      <Button secondary title="Área dev: cenário persistido e dados sintéticos" onPress={() => router.push("/dev-scenario")} />
+      <Button secondary title="Movimentação no cenário visual local" onPress={() => router.push("/local-movement?kind=expense")} />
       <Card>
         <Text style={ui.heading}>Dados e segurança</Text>
         <Text style={ui.body}>

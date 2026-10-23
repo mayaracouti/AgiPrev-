@@ -14,7 +14,7 @@ class Customer(IdentityMixin, Base):
     __tablename__ = "customers"
     name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(160), unique=True)
-    demo_profile: Mapped[str] = mapped_column(String(24), unique=True)
+    demo_profile: Mapped[str] = mapped_column(String(24), index=True)
     password_hash: Mapped[str] = mapped_column(String(256))
 
 
@@ -36,8 +36,28 @@ class LedgerEntry(IdentityMixin, Base):
     amount: Mapped[Decimal] = mapped_column(MONEY)
     description: Mapped[str] = mapped_column(String(120))
     occurred_on: Mapped[date] = mapped_column(Date)
+    category_id: Mapped[str] = mapped_column(
+        String(24), ForeignKey("categories.id"), default="other", server_default="other"
+    )
+    kind: Mapped[str] = mapped_column(String(16), default="transfer", server_default="transfer")
+    recipient: Mapped[str | None] = mapped_column(String(120))
+    request_hash: Mapped[str | None] = mapped_column(String(64))
+    available_on: Mapped[date | None] = mapped_column(Date)
+    reversal_of: Mapped[str | None] = mapped_column(
+        String(100), ForeignKey("ledger_entries.reference")
+    )
     reference: Mapped[str] = mapped_column(String(100), unique=True)
     __table_args__ = (
         CheckConstraint("amount > 0", name="amount_positive"),
         CheckConstraint("direction IN ('credit', 'debit')", name="direction_valid"),
     )
+
+
+class Category(Base):
+    __tablename__ = "categories"
+    id: Mapped[str] = mapped_column(String(24), primary_key=True)
+    name: Mapped[str] = mapped_column(String(60))
+
+
+# A transaction is a confirmed ledger entry, not a second source of monetary truth.
+Transaction = LedgerEntry

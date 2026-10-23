@@ -77,3 +77,16 @@ python3 scripts/verify_infrastructure.py
 O primeiro comando inclui upgrade/downgrade/upgrade e isolamento de sessões. O segundo teste usa um projeto Compose com nome aleatório, portas 18080/15432 e volume próprios para verificar persistência após reinício; remove somente os recursos desse projeto temporário. Se essas portas estiverem ocupadas, libere-as antes de executar.
 
 Evidências, lacunas e status por tarefa: [IMPLEMENTATION_STATUS](docs/IMPLEMENTATION_STATUS.md). Requisitos refinados: [Sprints 1 e 2](docs/requirements/sprints-01-02.md). Arquitetura e contrato monetário: [estrutura](docs/architecture/project-structure.md).
+
+
+## Transações e dados sintéticos
+
+Receitas, despesas e Pix simulados são gravados pela API com idempotência e comprovante. O Extrato possui filtros e edição de categoria. Conta → Área dev permite avançar o cenário persistido e agendar eventos extraordinários. O AgiPrevê mostra recorrências detectadas por heurística, separadas das previsões visuais locais.
+
+Gerador opcional, exclusivamente fictício:
+
+```bash
+docker compose exec api python -m app.modules.simulation.generator --seed 42 --count 1000
+```
+
+Procedimentos, limites e reprodução em [desenvolvimento local](docs/guides/local-development.md); contratos em [api-contracts.md](docs/architecture/api-contracts.md).

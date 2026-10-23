@@ -138,3 +138,51 @@ python3 scripts/verify_infrastructure.py
 ```
 
 O primeiro comando usa banco descartável terminado em `_test`; o segundo cria projeto e volume exclusivos para comprovar persistência após reinício. Migrações destrutivas são executadas somente em schemas de teste isolados.
+
+
+## Banco simulado persistido e dados sintéticos — TASK-011 a TASK-020
+
+Depois de atualizar os arquivos, aplicar as migrações em vez de recriar o banco:
+
+```bash
+docker compose up --build -d
+```
+
+No app, Receber/Pagar/Pix abrem revisão e confirmação pela API. O comprovante e o extrato são persistidos. O extrato oferece período, descrição, categoria e direção, paginação por cursor e edição de categoria. O saldo do início é atualizado após confirmação. As regras visuais antigas permanecem em Conta → Movimentação no cenário visual local.
+
+Para gerar o conjunto completo (operação administrativa local e exclusivamente fictícia):
+
+```bash
+docker compose exec api python -m app.modules.simulation.generator --seed 42 --count 1000
+```
+
+Gera seis perfis e 158 mil transações realizadas nos 365 dias anteriores a 23/10/2026, mais 36 mil eventos pendentes para um ano. O seletor público permite escolher perfil e navegar por páginas; os clientes gerados usam a DEMO_PASSWORD fictícia configurada. Cada senha recebe salt próprio; essa etapa pode levar alguns minutos para 1000 clientes. Não usar senhas pessoais.
+
+A mesma seed/índice reproduz IDs e dados financeiros (`synthetic-v1`); timestamps operacionais e hashes/salts de autenticação não compõem a comparação. Reexecutar a mesma seed pula clientes existentes sem substituir suas movimentações. Para comparar conjuntos novos, use seeds distintas ou bancos descartáveis; não limpe o banco de desenvolvimento.
+
+Conta → Área dev mostra resumo, relógio persistido e eventos. Avance por data AAAA-MM-DD; a data não retrocede. Para atrasar salário, informe a data de um salário ainda pendente. Compra extraordinária e receita eventual são agendadas e afetam somente o saldo agendado até o avanço. Eventos podem produzir saldo negativo, mas débitos manuais e Pix recusam insuficiência. Recorrências do histórico persistido também aparecem no AgiPrevê, separadas dos gráficos do cenário visual anterior.
+
+Validação objetiva:
+
+```bash
+docker compose -f compose.test.yaml run --rm -v "$PWD/backend:/app" tests pytest -p no:cacheprovider -s
+cd mobile
+npm run check
+```
+
+O volume do exemplo é somente para executar os testes com o código atual; a configuração de testes ignora `.env` locais. A geração completa é comprovada em PostgreSQL descartável, sem alterar dados de desenvolvimento. Evidências em [IMPLEMENTATION_STATUS](../IMPLEMENTATION_STATUS.md).
+
+## Séries e previsões persistidas (TASK-021 a 030)
+
+Aplicar `alembic upgrade head` até `0004_forecasts` antes de usar os endpoints de previsão. No AgiPrevê, o cartão de histórico persistido gera estimativas pela API e lista versões; os cenários locais anteriores continuam separados. Sem histórico suficiente, a versão informa `hybrid-insufficient-history-v1`.
+
+Exportação reprodutível (substituir UUID e datas por uma conta com histórico suficiente; executar em `backend/`):
+
+```bash
+python -m app.modules.forecasting.datasets --account UUID --cutoff 2026-10-23 --train-end 2026-04-30 --validation-end 2026-08-31 --destination /tmp/agipreve-datasets --seed 42
+python -m app.modules.forecasting.laboratory --account UUID --cutoff 2026-07-01 --validation-end 2026-08-31 --horizon 30 --output /tmp/agipreve-laboratory.html
+```
+
+O primeiro comando cria manifesto e arquivos separados de treino, validação e holdout em diretório identificado pelo SHA-256. O segundo gera uma interface HTML de comparação dos três baselines e JSON com curvas e MAE de saldo calculado sobre valores realizados. Não usar o holdout para escolher o modelo; a comparação rejeita horizontes além do limite de validação. A geração do relatório não adiciona uma aba ao banco.
+
+Na exportação com fontes do ledger, cada partição contém `series` e `observations` com disponibilidade preservada até seu limite. Imports tardios ficam fora do treino anterior à sua chegada; a versão também incorpora as fontes. Ao construir atributos a partir dessas observações, usar sempre o corte por origem do pipeline, nunca tratar todos os dados da partição como disponíveis em todas as suas datas.

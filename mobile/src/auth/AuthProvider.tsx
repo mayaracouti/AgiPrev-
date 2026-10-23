@@ -15,12 +15,13 @@ import {
 import type { Customer, LoginResponse } from "@/features/banking/contracts";
 import { ApiError, errorMessage } from "@/services/errors";
 
+interface CustomerQuery { profile?: string; search?: string; offset?: number }
 interface AuthContextValue {
   session: LoginResponse | null;
   customers: Customer[];
   loading: boolean;
   error: string | null;
-  loadCustomers: () => Promise<void>;
+  loadCustomers: (query?: CustomerQuery) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
+  const customerRequest = useRef(0);
   const clear = useCallback(() => {
     setAccessToken(null);
     setSession(null);
@@ -47,17 +49,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     return () => clearTimeout(timer);
   }, [session, clear]);
-  const loadCustomers = useCallback(async () => {
+  const loadCustomers = useCallback(async (query: CustomerQuery = {}) => {
+    const current = ++customerRequest.current;
+    setCustomers([]);
     setLoading(true);
     setError(null);
     try {
-      const data = await request<Customer[]>("/customers");
+      const data = await request<Customer[]>("/customers", {params: {...query, limit: 50}});
       if (!Array.isArray(data)) throw new Error("Invalid profiles");
-      setCustomers(data);
+      if (current === customerRequest.current) setCustomers(data);
     } catch (cause) {
-      setError(errorMessage(cause));
+      if (current === customerRequest.current) setError(errorMessage(cause));
     } finally {
-      setLoading(false);
+      if (current === customerRequest.current) setLoading(false);
     }
   }, []);
   async function login(email: string, password: string) {

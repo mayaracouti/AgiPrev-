@@ -37,7 +37,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       guard.current.clear();
       dispatch({
         type: "reset",
-        profileId: auth.session.customer.demo_profile,
+        profileId: auth.session.customer.demo_profile === "variable" ? "variable" : auth.session.customer.demo_profile === "tight" ? "tight" : "regular",
         seed: 42,
       });
     }

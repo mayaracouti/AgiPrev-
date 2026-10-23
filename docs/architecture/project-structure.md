@@ -90,3 +90,10 @@ Procedimentos e limitações verificadas estão no [guia local](../guides/local-
 ## Estado das Sprints 1 e 2
 
 As descrições anteriores de estado volátil referem-se aos cenários visuais. Clientes, contas, sessões e ledger usam PostgreSQL; a revisão `0002_accounts_auth_ledger` cria suas tabelas. A API de negócio existe em `/api/v1`; os contratos estão em [api-contracts.md](api-contracts.md). O AuthProvider controla login, expiração e logout pela API; DemoProvider mantém somente cenários locais. Saldo e extrato confirmados usam Axios sem fallback para fixtures. As quatro abas são Início, Extrato, Pix e AgiPrevê; Conta é auxiliar.
+
+
+## Extensão TASK-011–020
+
+`banking/transactions.py` implementa contratos e escrita idempotente sobre o ledger existente; `transaction_router.py` expõe histórico, categorias e operações simuladas. `simulation/` contém relógio persistido, agenda e gerador determinístico. `forecasting/recurrences.py` contém exclusivamente a heurística mensal e cálculo de precision/recall. A migração `0003_transactions_scenarios` preserva valores existentes e classifica lançamentos antigos. Não há segundo ledger ou serviço externo.
+
+No mobile, as operações principais usam a API; `local-movement.tsx` preserva o fluxo visual anterior. Atualizações bancárias invalidam saldo, extrato e recorrências por versão compartilhada. `dev-scenario.tsx` organiza controles técnicos sem adicionar aba bancária ou laboratório. O seletor consulta páginas de clientes e filtra seis perfis.

@@ -20,7 +20,7 @@ PROFILES = (
 
 def seed(session: Session, password: str) -> None:
     for profile, name, email, opening in PROFILES:
-        customer = session.scalar(select(Customer).where(Customer.demo_profile == profile))
+        customer = session.scalar(select(Customer).where(Customer.email == email))
         if customer is None:
             customer = Customer(
                 name=name, email=email, demo_profile=profile, password_hash=hash_password(password)
@@ -41,6 +41,7 @@ def seed(session: Session, password: str) -> None:
                     amount=Decimal(opening),
                     direction="credit",
                     description="Crédito inicial fictício",
+                    category_id="income",
                     occurred_on=date(2026, 10, 23),
                     reference=reference,
                 )

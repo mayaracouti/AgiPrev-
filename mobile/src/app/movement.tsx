@@ -1,195 +1,83 @@
 import { useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  Text,
-  TextInput,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { useDemo } from "@/demo/DemoProvider";
-import { dateLabel, money, parseCents, currentSnapshot } from "@/demo/model";
-import { categories, type Category, type TransactionKind } from "@/demo/types";
+import { Text, TextInput } from "react-native";
+import { useAuth } from "@/auth/AuthProvider";
+import { useBalance } from "@/features/banking/useBalance";
+import { useCategories } from "@/features/banking/useCategories";
+import { decimalInput, idempotencyKey } from "@/features/banking/inputs";
+import { bankingUpdated } from "@/features/banking/refresh";
+import { formatDecimal, type Receipt } from "@/features/banking/contracts";
+import { request } from "@/services/http";
+import { errorMessage } from "@/services/errors";
 import { Screen, Card, Button, Chips, Badge } from "@/components/ui";
 import { ui, theme } from "@/theme";
 export default function Movement() {
-  const params = useLocalSearchParams<{ kind?: string }>();
-  const kind: TransactionKind =
-    params.kind === "income"
-      ? "income"
-      : params.kind === "expense"
-        ? "expense"
-        : "pix";
-  const { state, balance, confirm } = useDemo();
+  const { kind: parameter } = useLocalSearchParams<{ kind?: string }>();
+  const kind = parameter === "income" ? "income" : parameter === "expense" ? "expense" : "pix";
+  const { session } = useAuth();
+  const account = session?.accounts[0]?.id;
+  const balance = useBalance();
+  const { categories, error: categoryError } = useCategories();
   const [description, setDescription] = useState("");
   const [value, setValue] = useState("");
-  const [category, setCategory] = useState<Category>(
-    kind === "income" ? "Renda" : kind === "pix" ? "Pix" : "Outros",
-  );
+  const [recipient, setRecipient] = useState("");
+  const [category, setCategory] = useState(kind === "income" ? "income" : kind === "pix" ? "pix" : "other");
+  const [stage, setStage] = useState<"form" | "review" | "receipt">("form");
   const [error, setError] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
   const locked = useRef(false);
-  const id = useRef<string | null>(null);
-  const [previous, setPrevious] = useState(() => currentSnapshot(state));
-  const cents = parseCents(value);
-  function submit() {
-    if (locked.current) return;
-    if (cents === null) {
-      setError(
-        "Use um valor maior que zero, como 120,50, sem separador de milhar.",
-      );
-      return;
+  const [payload, setPayload] = useState<Record<string, string> | null>(null);
+  function review() {
+    const amount = decimalInput(value);
+    if (!amount || !description.trim() || (kind === "pix" && !recipient.trim())) {
+      setError("Informe descrição, valor positivo com até duas casas e favorecido fictício para Pix."); return;
     }
-    id.current ??= `manual-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setPrevious(currentSnapshot(state));
-    const message = confirm({
-      id: id.current,
-      date: state.date,
-      description: description.trim(),
-      category,
-      kind,
-      cents,
-    });
-    if (message) {
-      setError(message);
-      return;
-    }
-    locked.current = true;
-    setConfirmed(true);
+    setPayload({amount, description: description.trim(), category_id: category, idempotency_key: idempotencyKey(),
+      ...(kind === "pix" ? {recipient: recipient.trim()} : {})});
+    setError(""); setStage("review");
   }
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <Screen
-        back
-        title={
-          confirmed
-            ? "Tudo certo!"
-            : kind === "income"
-              ? "Registrar receita"
-              : kind === "expense"
-                ? "Registrar despesa"
-                : "Enviar Pix"
-        }
-        subtitle="Simulação visual local · não grava lançamentos no servidor."
-      >
-        {confirmed ? (
-          <>
-            <Card style={{ backgroundColor: theme.colors.paleGreen }}>
-              <Badge text="Simulação confirmada nesta sessão" tone="green" />
-              <Text style={ui.amount}>{money(cents!)}</Text>
-              <Text style={ui.label}>{description}</Text>
-              <Text style={ui.body}>
-                Saldo do cenário atualizado: {money(balance)}
-              </Text>
-            </Card>
-            <Card>
-              <Text style={ui.heading}>Sua previsão também mudou</Text>
-              <Text style={ui.body}>
-                Cenário anterior: {previous.id} ·{" "}
-                {money(previous.points[6]!.balance)} em 7 dias
-              </Text>
-              <Text style={ui.body}>
-                Novo cenário: {currentSnapshot(state).id} ·{" "}
-                {money(currentSnapshot(state).points[6]!.balance)} em 7 dias
-              </Text>
-              <Text style={ui.body}>
-                A versão anterior foi preservada para comparação. Valores
-                ilustrativos, sem inferência de um modelo treinado.
-              </Text>
-            </Card>
-            <Button
-              title="Ver impacto no AgiPrevê"
-              onPress={() => router.replace("/(tabs)/agipreve")}
-            />
-            <Button
-              secondary
-              title="Voltar ao início"
-              onPress={() => router.replace("/(tabs)")}
-            />
-          </>
-        ) : (
-          <>
-            <Card>
-              <View style={ui.between}>
-                <Text style={ui.body}>Saldo disponível no cenário local</Text>
-                <Text style={ui.label}>{money(balance)}</Text>
-              </View>
-              <Text style={ui.body}>
-                Data simulada: {dateLabel(state.date)}
-              </Text>
-            </Card>
-            <Text nativeID="description-label" style={ui.label}>
-              {kind === "pix"
-                ? "Chave Pix ou favorecido fictício"
-                : "Descrição"}
-            </Text>
-            <TextInput
-              accessibilityLabel={
-                kind === "pix"
-                  ? "Chave Pix ou favorecido fictício"
-                  : "Descrição"
-              }
-              style={ui.input}
-              value={description}
-              onChangeText={setDescription}
-              maxLength={120}
-              autoCapitalize="sentences"
-              placeholder={
-                kind === "pix"
-                  ? "Ex.: mercado@exemplo.com"
-                  : "Ex.: Compra no mercado"
-              }
-            />
-            <Text style={ui.label}>Valor em reais</Text>
-            <TextInput
-              accessibilityLabel="Valor em reais"
-              style={ui.input}
-              keyboardType="decimal-pad"
-              value={value}
-              onChangeText={setValue}
-              placeholder="0,00"
-              maxLength={10}
-            />
-            {kind !== "pix" && (
-              <>
-                <Text style={ui.label}>Categoria</Text>
-                <Chips
-                  values={categories}
-                  value={category}
-                  onChange={setCategory}
-                />
-              </>
-            )}
-            {error !== "" && (
-              <Text
-                accessibilityRole="alert"
-                style={{ color: theme.colors.red }}
-              >
-                {error}
-              </Text>
-            )}
-            <Card>
-              <Text style={ui.body}>
-                Após confirmar, o saldo e o cenário ilustrativo serão
-                atualizados. Nesta demonstração, saídas acima do saldo são
-                recusadas. Os dados são apagados ao reiniciar a sessão.
-              </Text>
-            </Card>
-            <Button
-              title={
-                kind === "pix"
-                  ? "Confirmar Pix simulado"
-                  : "Confirmar movimentação"
-              }
-              disabled={!description.trim() || !value}
-              onPress={submit}
-            />
-          </>
-        )}
-      </Screen>
-    </KeyboardAvoidingView>
-  );
+  async function submit() {
+    if (locked.current || !payload || !account) return;
+    locked.current = true; setBusy(true); setError("");
+    try {
+      const result = await request<Receipt>(kind === "pix" ? "/pix/simulate" : `/accounts/${account}/${kind === "income" ? "credits" : "debits"}`, {
+        method: "POST", data: {...payload, ...(kind === "pix" ? {account_id: account} : {})},
+      });
+      setReceipt(result); setStage("receipt"); bankingUpdated();
+    } catch (cause) { setError(errorMessage(cause)); }
+    finally { locked.current = false; setBusy(false); }
+  }
+  return <Screen back title={stage === "receipt" ? "Comprovante simulado" : kind === "income" ? "Registrar receita" : kind === "expense" ? "Registrar despesa" : "Enviar Pix simulado"}
+    subtitle="Conta fictícia persistida · nenhuma transferência real.">
+    {stage === "receipt" && receipt ? <>
+      <Card><Badge text="Confirmado no servidor · dados fictícios" tone="green" />
+        <Text style={ui.amount}>{formatDecimal(receipt.transaction.amount)}</Text>
+        <Text style={ui.label}>{receipt.transaction.description}</Text>
+        {receipt.transaction.recipient && <Text style={ui.body}>Favorecido fictício: {receipt.transaction.recipient}</Text>}
+        <Text style={ui.body}>Data: {receipt.transaction.occurred_on}</Text>
+        <Text selectable style={ui.body}>Identificador: {receipt.transaction.id}</Text>
+        <Text style={ui.body}>Saldo após consulta: {formatDecimal(receipt.balance)}</Text>
+      </Card><Button title="Ver extrato" onPress={() => router.replace("/(tabs)/statement")} />
+      <Button secondary title="Voltar ao início" onPress={() => router.replace("/(tabs)")} />
+    </> : stage === "review" ? <>
+      <Card><Text style={ui.heading}>Confira antes de confirmar</Text>
+        <Text style={ui.amount}>{formatDecimal(payload!.amount!)}</Text>
+        <Text style={ui.body}>{description}</Text>
+        {kind === "pix" && <Text style={ui.body}>Favorecido fictício: {recipient}</Text>}
+        <Text style={ui.body}>Saídas acima do saldo são recusadas. Repetir esta solicitação não duplica a movimentação.</Text>
+      </Card>
+      <Button title={busy ? "Confirmando…" : "Confirmar"} disabled={busy} onPress={() => {void submit();}} />
+      {!error && <Button secondary title="Editar antes de enviar" disabled={busy} onPress={() => setStage("form")} />}
+      {error && <Text style={ui.body}>Tente novamente com a mesma solicitação. Em dúvida, confira o extrato antes de iniciar outra.</Text>}
+    </> : <>
+      <Card><Text style={ui.body}>Saldo confirmado: {balance.data ? formatDecimal(balance.data.balance) : balance.loading ? "Consultando…" : "Indisponível"}</Text></Card>
+      <Text style={ui.label}>Descrição</Text><TextInput accessibilityLabel="Descrição" value={description} onChangeText={setDescription} maxLength={120} style={ui.input} />
+      <Text style={ui.label}>Valor em reais</Text><TextInput accessibilityLabel="Valor em reais" value={value} onChangeText={setValue} keyboardType="decimal-pad" maxLength={19} style={ui.input} placeholder="0,00" />
+      {kind === "pix" && <><Text style={ui.label}>Favorecido fictício</Text><TextInput accessibilityLabel="Favorecido fictício" value={recipient} onChangeText={setRecipient} maxLength={120} style={ui.input} placeholder="Ex.: mercado@demo.local" /></>}
+      <Text style={ui.label}>Categoria</Text><Chips values={categories.map(c => c.id)} value={category} onChange={setCategory} label={id => categories.find(c => c.id === id)?.name ?? id} />
+      <Button title="Revisar movimentação" disabled={!account || !categories.length} onPress={review} />
+    </>}
+    {(error || categoryError) && <Text accessibilityRole="alert" style={{color: theme.colors.red}}>{error || categoryError}</Text>}
+  </Screen>;
 }

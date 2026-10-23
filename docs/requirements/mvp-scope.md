@@ -70,3 +70,8 @@ O Laboratório de avaliação não é uma aba da aplicação bancária. Sua inte
 ## Atualização — Sprints 1 e 2
 
 O [refinamento das TASK-001 a TASK-010](sprints-01-02.md) substitui as descrições históricas de integração futura para clientes, contas, autenticação fictícia e saldo. Esses fluxos usam a API FastAPI e PostgreSQL. Cenários, movimentações/Pix visuais e previsões locais continuam demonstrativos, separados do ledger persistido. Consulte as [evidências de implementação](../IMPLEMENTATION_STATUS.md).
+
+
+## Atualização — banco simulado e dados sintéticos
+
+As [TASK-011 a TASK-020](sprints-02-03.md) autorizam transações e Pix simulados persistidos, categorias, relógio/eventos no servidor, geração de seis perfis e histórico sintético, além de detecção heurística de recorrências. Esses recursos substituem a indicação histórica de integração futura para RF-003–RF-015 no escopo deste lote. Gráficos e previsões do cenário visual anterior continuam locais e identificados; não há motor preditivo treinado ou push nesta entrega.

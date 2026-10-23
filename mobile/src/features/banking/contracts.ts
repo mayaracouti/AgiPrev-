@@ -1,9 +1,8 @@
-import type { ProfileId } from "@/demo/types";
 export interface Customer {
   id: string;
   name: string;
   email: string;
-  demo_profile: ProfileId;
+  demo_profile: string;
 }
 export interface Account {
   id: string;
@@ -52,3 +51,21 @@ export function formatDecimal(value: string): string {
   const negative = whole.startsWith("-");
   return `${negative ? "−" : ""}R$ ${whole.replace("-", "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${fraction}`;
 }
+
+export interface Category { id: string; name: string }
+export interface BankTransaction extends LedgerEntry {
+  category_id: string;
+  kind: string;
+  recipient: string | null;
+}
+export interface TransactionPage { items: BankTransaction[]; next_cursor: string | null; total: number }
+export interface Receipt { transaction: BankTransaction; balance: string; simulated: true }
+export interface Scenario {
+  id: string; current_date: string; seed: number; version: string; balance: string;
+  pending_events: {id: string; date: string; kind: string; amount: string; direction: string; description: string; scheduled_balance: string}[];
+}
+export const financialProfiles = ["regular", "variable", "tight", "retired", "entrepreneur", "seasonal"] as const;
+export const profileNames: Record<string, string> = {
+  regular: "Renda regular", variable: "Renda variável", tight: "Orçamento apertado",
+  retired: "Aposentadoria fictícia", entrepreneur: "Empreendedor", seasonal: "Renda sazonal",
+};

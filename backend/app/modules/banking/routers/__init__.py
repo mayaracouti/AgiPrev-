@@ -2,8 +2,10 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Response
+from sqlalchemy import select
 
 from app.modules.auth.dependencies import CurrentCustomer, Database
+from app.modules.banking.models import Customer
 from app.modules.banking.repositories import BankingRepository
 from app.modules.banking.schemas import (
     AccountResponse,
@@ -17,9 +19,22 @@ router = APIRouter(tags=["banking"])
 
 
 @router.get("/customers", response_model=list[CustomerResponse])
-def customers(session: Database):
+def customers(
+    session: Database,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    profile: Annotated[str | None, Query(max_length=24)] = None,
+    search: Annotated[str | None, Query(max_length=120)] = None,
+):
     """Public list of fictitious profiles for the demo sign-in screen; no passwords or balances."""
-    return BankingRepository(session).customers()
+    query = select(Customer)
+    if profile:
+        query = query.where(Customer.demo_profile == profile)
+    if search:
+        query = query.where(Customer.name.icontains(search, autoescape=True))
+    return list(
+        session.scalars(query.order_by(Customer.name, Customer.id).offset(offset).limit(limit))
+    )
 
 
 @router.get("/accounts", response_model=list[AccountResponse])
